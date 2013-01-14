@@ -1,11 +1,14 @@
 #! /usr/bin/env python
 
 import hashlib
+import hmac
 import urllib2
 from hashlib import *
 from urllib2 import *
+from urllib import quote_plus
 import time
 import sys
+import base64
 
 class AwsUrlException(Exception):
     '''
@@ -25,7 +28,7 @@ class AwsUrl(object):
     '''
     def __init__(self, method='GET', base_url = None, params={}, key = None, secret = None ):
         if base_url == None:
-            self.base_url = 'http://webservices.amazon.com/onca/xml/'
+            self.base_url = 'http://webservices.amazon.com/onca/xml'
         else:
             self.base_url = base_url
         self.method = method.upper()
@@ -44,12 +47,23 @@ class AwsUrl(object):
         if self.method == None:
             self.method = 'GET'
         self.method = self.method.upper()
+        # Add Timestamp to parameters
         self.timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        ''' For aws must create a string with paramters sorted and then
-            connected by ampersands and of course must escape it all
-        '''
+        # Really caller shouldn't but...
+        if 'Timestamp' not in self.params:
+            self.params['Timestamp'] = self.timestamp
+
         # Add Access Key to params
-        self.params['AWSAccessKeyId'] = self.key
+        if 'AWSAccessKeyId' not in self.params:
+            self.params['AWSAccessKeyId'] = self.key
+        else:
+            self.key = self.params['AWSAccessKeyId']
+        if 'Version' not in self.params:
+            self.params['Version'] = '2009-01-06'
+
+        ''' For aws must create a string with parameters sorted and then
+            connected by ampersands and of course must escape it all.
+        '''
         # Convert dictionary of parameters into list of tuples for sorting
         params = [(k,v) for k,v in self.params.iteritems()]
         params.sort() # mutable will sort
@@ -63,34 +77,58 @@ class AwsUrl(object):
         # reserved since otherwise quote() will quote it as well
         paramstring = urllib2.quote(paramstring, '=&')
         # Now form signature
-        signature = self.method + '\n' + 'webservices.amazon.com' + '\n' + \
-            '/onca/xml/' + '\n' + paramstring
-        print 'For signing: ' + signature
-        return self.base_url + paramstring
+        msg = self.method + '\x0a' + 'webservices.amazon.com' + '\x0a' + \
+            '/onca/xml' + '\x0a' + paramstring
+        print '--------------------------------------------------------------------'
+        print 'For signing:'
+        print msg
+        print '--------------------------------------------------------------------'
+        m = hmac.new(key=self.key, msg=msg, digestmod=hashlib.sha256)
+        digest = m.digest()
+        # Base64 encode to string and then escape it for final signature
+        signature = base64.encodestring(digest).strip()
+        ####
+        # I bet this will be a problem. Might escape things that
+        # shouldn't be?  Only supposed to escape '=' and '+'
+        signature = quote_plus(signature)
+
+        return self.base_url + '?' + paramstring + '&Signature=' + signature
 
 
 
 if __name__ == '__main__':
-    print 'Enter URL and parameters and empty to terminate'
-    params = {}
-    while(True):
-        try:
-            param = raw_input('Enter parameter key: ')
-            value = raw_input('Enter parameter value: ')
-        except:
-            break;
-    try:
-        key = raw_input('Enter Amazon key: ')
-    except:
-        sys.exit(0)
+    print 'Testing module aws_url'
 
-    try:
-        secret = raw_input('Enter Amazon secret: ')
-    except:
-        sys.exit(0)
+    key = raw_input('Enter ID: ')
+    secret = raw_input('Enter secret: ')
 
-    aws_url = AwsUrl( 'GET', params, key = key, secret = secret )
+    # Note: Had to add the timestamp from the examples since the current one obviously would not
+    # result in the same signature
+    test_vectors = {
+        'http://webservices.amazon.com/onca/xml?Service=AWSECommerceService&AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Operation=ItemLookup&ItemId=0679722769&ResponseGroup=ItemAttributes,Offers,Images,Reviews&Version=2009-01-06&Timestamp=2009-01-01T12:00:00Z':
+        'http://webservices.amazon.com/onca/xml?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&ItemId=0679722769&Operation=ItemLookup&ResponseGroup=ItemAttributes%2COffers%2CImages%2CReviews&Service=AWSECommerceService&Timestamp=2009-01-01T12%3A00%3A00Z&Version=2009-01-06&Signature=M%2Fy0%2BEAFFGaUAp4bWv%2FWEuXYah99pVsxvqtAuC8YN7I%3D',
 
-    url = aws_url.signed_uri()
+        'http://webservices.amazon.com/onca/xml?Service=AWSECommerceService&Operation=ItemLookup&ItemId=0679722769&ResponseGroup=ItemAttributes,Offers,Images,Reviews&Version=2009-01-06':
+        'http://webservices.amazon.com/onca/xml?ItemId=0679722769&Operation=ItemLookup&ResponseGroup=ItemAttributes%2COffers%2CImages%2CReviews&Service=AWSECommerceService&Timestamp=2009-01-01T12%3A00%3A00Z&Version=2009-01-06&Signature=M%2Fy0%2BEAFFGaUAp4bWv%2FWEuXYah99pVsxvqtAuC8YN7I%3D'
+        }
+
+    secret = '1234567890' 
+
+    for url,signed in test_vectors.iteritems():
+        #print 'url = ' + url
+        #print 'signed = ' + signed
+        uri_params = url.split('?')
+        uri_params = uri_params[1].split('&')
+        params = { a.split('=')[0]:a.split('=')[1] for a in uri_params }
+        print 'params: ', params
+        aws_url = AwsUrl( 'GET', params = params, key = key, secret = secret )
+
+        url_signed = aws_url.signed_url()
+
+        print 'Expected:'
+        print signed
+        print 'Got:'
+        print url_signed
+
 
 
