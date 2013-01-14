@@ -2,10 +2,9 @@
 
 import hashlib
 import hmac
-import urllib2
+import urllib
+from urllib import quote
 from hashlib import *
-from urllib2 import *
-from urllib import quote_plus
 import time
 import sys
 import base64
@@ -65,32 +64,27 @@ class AwsUrl(object):
             connected by ampersands and of course must escape it all.
         '''
         # Convert dictionary of parameters into list of tuples for sorting
-        params = [(k,v) for k,v in self.params.iteritems()]
-        params.sort() # mutable will sort
+        paramset = [(quote(k),quote(v)) for k,v in self.params.iteritems()]
+        paramset.sort() # mutable paramset will sort
         # Recombine into & separated list of parameters
-        paramstring = ''
-        for i in params:
-            paramstring += '='.join(i)
-            if i != params[-1]:
-                paramstring += '&'
-        # Now must quote (escape) params string, treating '=' as
-        # reserved since otherwise quote() will quote it as well
-        paramstring = urllib2.quote(paramstring, '=&')
+        paramstring = '&'.join(['%s=%s' % (k, v) for k, v in paramset])
+        #paramstring ="&".join("%s=%s" % (k, urllib.quote(unicode(kwargs[k]).encode('utf-8'), safe = '~')) for k in paramset) 
         # Now form signature
-        msg = self.method + '\x0a' + 'webservices.amazon.com' + '\x0a' + \
-            '/onca/xml' + '\x0a' + paramstring
+        msg = self.method + "\n" + 'webservices.amazon.com' + "\n" + \
+            '/onca/xml' + "\n" + paramstring
         print '--------------------------------------------------------------------'
         print 'For signing:'
         print msg
         print '--------------------------------------------------------------------'
-        m = hmac.new(key=self.key, msg=msg, digestmod=hashlib.sha256)
+        m = hmac.new(key=self.secret, digestmod=hashlib.sha256)
+        m.update(msg)
         digest = m.digest()
         # Base64 encode to string and then escape it for final signature
         signature = base64.encodestring(digest).strip()
         ####
         # I bet this will be a problem. Might escape things that
         # shouldn't be?  Only supposed to escape '=' and '+'
-        signature = quote_plus(signature)
+        signature = quote(signature)
 
         return self.base_url + '?' + paramstring + '&Signature=' + signature
 
@@ -99,8 +93,16 @@ class AwsUrl(object):
 if __name__ == '__main__':
     print 'Testing module aws_url'
 
-    key = raw_input('Enter ID: ')
-    secret = raw_input('Enter secret: ')
+    f = open('aws.key')
+    key = f.read()
+    f.close()
+    key = key.rstrip()
+    f = open('aws.secret')
+    secret = f.read(100)
+    f.close()
+    secret = secret.rstrip()
+    print 'AWS key = ' + key
+    print 'AWS secret = ' + secret
 
     # Note: Had to add the timestamp from the examples since the current one obviously would not
     # result in the same signature
@@ -112,7 +114,7 @@ if __name__ == '__main__':
         'http://webservices.amazon.com/onca/xml?ItemId=0679722769&Operation=ItemLookup&ResponseGroup=ItemAttributes%2COffers%2CImages%2CReviews&Service=AWSECommerceService&Timestamp=2009-01-01T12%3A00%3A00Z&Version=2009-01-06&Signature=M%2Fy0%2BEAFFGaUAp4bWv%2FWEuXYah99pVsxvqtAuC8YN7I%3D'
         }
 
-    secret = '1234567890' 
+    #secret = '1234567890' 
 
     for url,signed in test_vectors.iteritems():
         #print 'url = ' + url
