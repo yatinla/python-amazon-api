@@ -25,15 +25,26 @@ class AwsUrl(object):
         using add_param, finalize the URL using finalize,
         and sign using sign
     '''
-    def __init__(self, method='GET', base_url = None, params={}, key = None, secret = None ):
+    def __init__(self, method='GET', base_url = None, params={}, tag = None, key = None, secret = None ):
+        if tag == None:
+            raise(AwsUrlException("Associate tag is a required parameter"))
+        else:
+            self.tag = tag
+        if key == None:
+            raise(AwsUrlException("Associate Key ID is a required parameter"))
+        else:
+            self.key = key
+        if secret == None:
+            raise(AwsUrlException("Associate secret is a required parameter"))
+        else:
+            self.secret = secret
         if base_url == None:
             self.base_url = 'http://webservices.amazon.com/onca/xml'
         else:
             self.base_url = base_url
+
         self.method = method.upper()
         self.params = params
-        self.key = key
-        self.secret = secret
 
     def add_param( self, key, value ):
         '''
@@ -45,10 +56,10 @@ class AwsUrl(object):
     def signed_url(self):
         if self.method == None:
             self.method = 'GET'
-        self.method = self.method.upper()
         # Add Timestamp to parameters
         self.timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        # Really caller shouldn't but...
+        # Really caller shouldn't but for testing against test vectors 
+        # makes it easier
         if 'Timestamp' not in self.params:
             self.params['Timestamp'] = self.timestamp
 
@@ -57,6 +68,9 @@ class AwsUrl(object):
             self.params['AWSAccessKeyId'] = self.key
         else:
             self.key = self.params['AWSAccessKeyId']
+        if 'AssociateTag' not in self.params:
+            self.params['AssociateTag'] = self.tag
+            
         if 'Version' not in self.params:
             self.params['Version'] = '2009-01-06'
 
@@ -92,7 +106,10 @@ class AwsUrl(object):
 
 if __name__ == '__main__':
     print 'Testing module aws_url'
-
+    f = open('aws.tag')
+    tag = f.read()
+    f.close()
+    tag = tag.rstrip()
     f = open('aws.key')
     key = f.read()
     f.close()
@@ -123,7 +140,7 @@ if __name__ == '__main__':
         uri_params = uri_params[1].split('&')
         params = { a.split('=')[0]:a.split('=')[1] for a in uri_params }
         #print 'params: ', params
-        aws_url = AwsUrl( 'GET', params = params, key = key, secret = secret )
+        aws_url = AwsUrl( 'GET', params = params, tag = tag, key = key, secret = secret )
 
         url_signed = aws_url.signed_url()
 

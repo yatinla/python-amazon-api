@@ -4,5 +4,6 @@
 local_settings.py
 *.secret
 *.key
+*.tag
 *.swp
 
