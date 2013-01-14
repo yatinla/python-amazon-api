@@ -120,7 +120,7 @@ if __name__ == '__main__':
         uri_params = url.split('?')
         uri_params = uri_params[1].split('&')
         params = { a.split('=')[0]:a.split('=')[1] for a in uri_params }
-        print 'params: ', params
+        #print 'params: ', params
         aws_url = AwsUrl( 'GET', params = params, key = key, secret = secret )
 
         url_signed = aws_url.signed_url()
