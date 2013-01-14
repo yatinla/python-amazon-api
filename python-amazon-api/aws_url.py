@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+import hashlib
+import urllib2
 from hashlib import *
 from urllib2 import *
 import time
@@ -23,12 +25,13 @@ class AwsUrl(object):
     '''
     def __init__(self, method='GET', base_url = None, params={}, key = None, secret = None ):
         if base_url == None:
-            base_url = 'http://webservices.amazon.com/onca/xml/'
+            self.base_url = 'http://webservices.amazon.com/onca/xml/'
+        else:
+            self.base_url = base_url
         self.method = method.upper()
         self.params = params
         self.key = key
         self.secret = secret
-        self.url = url
 
     def add_param( self, key, value ):
         '''
@@ -37,7 +40,7 @@ class AwsUrl(object):
         '''
         self.params[key] = value
         
-    def signed_uri(self):
+    def signed_url(self):
         if self.method == None:
             self.method = 'GET'
         self.method = self.method.upper()
@@ -58,7 +61,7 @@ class AwsUrl(object):
                 paramstring += '&'
         # Now must quote (escape) params string, treating '=' as
         # reserved since otherwise quote() will quote it as well
-        paramstring = urllib2.quote(paramstring, '=')
+        paramstring = urllib2.quote(paramstring, '=&')
         # Now form signature
         signature = self.method + '\n' + 'webservices.amazon.com' + '\n' + \
             '/onca/xml/' + '\n' + paramstring
@@ -86,4 +89,8 @@ if __name__ == '__main__':
     except:
         sys.exit(0)
 
-    aws_url = AwsUrl(
+    aws_url = AwsUrl( 'GET', params, key = key, secret = secret )
+
+    url = aws_url.signed_uri()
+
+
