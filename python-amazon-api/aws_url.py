@@ -9,6 +9,9 @@ from hashlib import *
 import time
 import sys
 import base64
+import xml.dom.minidom
+from xml.dom.minidom import parse, parseString
+import webbrowser
 
 class AwsUrlException(Exception):
     '''
@@ -145,10 +148,24 @@ if __name__ == '__main__':
 
         url_signed = aws_url.signed_url()
 
-        print 'Expected:'
-        print v['expected']
-        print 'Got:'
-        print url_signed
+        #print 'Expected:'
+        #print v['expected']
+        #print 'Got:'
+        #print url_signed
 
+    # Now try actually fecthing the url obtained from processing test vector [1]
+    #webbrowser.open_new_tab( url_signed )
+    f = urlopen( url_signed )
+    dom = parse(f)
+    f.close()
+
+    med_image = dom.getElementsByTagName("MediumImage")
+   
+    for i in med_image:
+        img_url = i.getElementsByTagName("URL")
+        for u in img_url:
+            print 'Tag name: ', u.tagName
+            url = u.firstChild.data
+            webbrowser.open_new_tab(url)
 
 
