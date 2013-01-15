@@ -3,6 +3,7 @@
 import hashlib
 import hmac
 import urllib
+from urllib2 import urlopen
 from urllib import quote
 from hashlib import *
 import time
@@ -123,20 +124,20 @@ if __name__ == '__main__':
 
     # Note: Had to add the timestamp from the examples since the current one obviously would not
     # result in the same signature
-    test_vectors = {
-        'http://webservices.amazon.com/onca/xml?Service=AWSECommerceService&AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Operation=ItemLookup&ItemId=0679722769&ResponseGroup=ItemAttributes,Offers,Images,Reviews&Version=2009-01-06&Timestamp=2009-01-01T12:00:00Z':
-        'http://webservices.amazon.com/onca/xml?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&ItemId=0679722769&Operation=ItemLookup&ResponseGroup=ItemAttributes%2COffers%2CImages%2CReviews&Service=AWSECommerceService&Timestamp=2009-01-01T12%3A00%3A00Z&Version=2009-01-06&Signature=M%2Fy0%2BEAFFGaUAp4bWv%2FWEuXYah99pVsxvqtAuC8YN7I%3D',
-
-        'http://webservices.amazon.com/onca/xml?Service=AWSECommerceService&Operation=ItemLookup&ItemId=0679722769&ResponseGroup=ItemAttributes,Offers,Images,Reviews&Version=2009-01-06':
-        'http://webservices.amazon.com/onca/xml?ItemId=0679722769&Operation=ItemLookup&ResponseGroup=ItemAttributes%2COffers%2CImages%2CReviews&Service=AWSECommerceService&Timestamp=2009-01-01T12%3A00%3A00Z&Version=2009-01-06&Signature=M%2Fy0%2BEAFFGaUAp4bWv%2FWEuXYah99pVsxvqtAuC8YN7I%3D'
-        }
+    test_vectors = [{'url':
+        'http://webservices.amazon.com/onca/xml?Service=AWSECommerceService&AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Operation=ItemLookup&ItemId=0679722769&ResponseGroup=ItemAttributes,Offers,Images,Reviews&Version=2009-01-06&Timestamp=2009-01-01T12:00:00Z',
+        'expected': 'http://webservices.amazon.com/onca/xml?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&ItemId=0679722769&Operation=ItemLookup&ResponseGroup=ItemAttributes%2COffers%2CImages%2CReviews&Service=AWSECommerceService&Timestamp=2009-01-01T12%3A00%3A00Z&Version=2009-01-06&Signature=M%2Fy0%2BEAFFGaUAp4bWv%2FWEuXYah99pVsxvqtAuC8YN7I%3D'},
+        {'url': 'http://webservices.amazon.com/onca/xml?Service=AWSECommerceService&Operation=ItemLookup&ItemId=0679722769&ResponseGroup=ItemAttributes,Offers,Images,Reviews&Version=2009-01-06', 
+        'expected': 'http://webservices.amazon.com/onca/xml?ItemId=0679722769&Operation=ItemLookup&ResponseGroup=ItemAttributes%2COffers%2CImages%2CReviews&Service=AWSECommerceService&Timestamp=2009-01-01T12%3A00%3A00Z&Version=2009-01-06&Signature=M%2Fy0%2BEAFFGaUAp4bWv%2FWEuXYah99pVsxvqtAuC8YN7I%3D' }
+        ]
 
     #secret = '1234567890' 
 
-    for url,signed in test_vectors.iteritems():
+    #for url,signed in test_vectors.iteritems():
+    for v in test_vectors:
         #print 'url = ' + url
         #print 'signed = ' + signed
-        uri_params = url.split('?')
+        uri_params = v['url'].split('?')
         uri_params = uri_params[1].split('&')
         params = { a.split('=')[0]:a.split('=')[1] for a in uri_params }
         #print 'params: ', params
@@ -145,7 +146,7 @@ if __name__ == '__main__':
         url_signed = aws_url.signed_url()
 
         print 'Expected:'
-        print signed
+        print v['expected']
         print 'Got:'
         print url_signed
 
