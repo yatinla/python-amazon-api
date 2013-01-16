@@ -158,6 +158,9 @@ if __name__ == '__main__':
     f = urlopen( url_signed )
     dom = parse(f)
     f.close()
+    f = open('aws.xml', 'w')
+    dom.writexml( f, addindent="  ", newl = "\n" )
+    f.close()
 
     med_image = dom.getElementsByTagName("MediumImage")
    

@@ -6,4 +6,5 @@ local_settings.py
 *.key
 *.tag
 *.swp
+*.xml
 
