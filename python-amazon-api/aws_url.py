@@ -162,7 +162,7 @@ if __name__ == '__main__':
     dom.writexml( f, addindent="  ", newl = "\n" )
     f.close()
 
-    med_image = dom.getElementsByTagName("MediumImage")
+    med_image = dom.getElementsByTagName("SmallImage")
    
     for i in med_image:
         img_url = i.getElementsByTagName("URL")
