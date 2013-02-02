@@ -12,10 +12,12 @@ import base64
 import xml.dom.minidom
 from xml.dom.minidom import parse, parseString
 import webbrowser
+import os
+import sys
 
 class AwsUrlException(Exception):
     '''
-        Exceptions raised by AWS URL code 
+        Exception type raised by AWS URL code 
     '''
     def __init__(self, value):
         self.value = value
@@ -106,24 +108,28 @@ class AwsUrl(object):
 
         return self.base_url + '?' + paramstring + '&Signature=' + signature
 
-
-
 if __name__ == '__main__':
     print 'Testing module aws_url'
-    f = open('aws.tag')
-    tag = f.read()
-    f.close()
-    tag = tag.rstrip()
-    f = open('aws.key')
-    key = f.read()
-    f.close()
-    key = key.rstrip()
-    f = open('aws.secret')
-    secret = f.read(100)
-    f.close()
-    secret = secret.rstrip()
-    print 'AWS key = ' + key
-    print 'AWS secret = ' + secret
+    try:
+        tag = os.environ['AWS_TAG']
+    except:
+        print('Missing environment variable for tag')
+        sys.exit(0)
+
+    try:
+        key = os.environ['AWS_KEY']
+        print 'AWS key = ' + key
+    except:
+        print('Missing environment variable for key')
+        sys.exit(0)
+
+    try:
+        secret = os.environ['AWS_SECRET']
+        print 'AWS secret = ' + secret
+    except:
+        print('Missing environment variable for secret')
+        sys.exit(0)
+
 
     # Note: Had to add the timestamp from the examples since the current one obviously would not
     # result in the same signature
@@ -133,8 +139,6 @@ if __name__ == '__main__':
         {'url': 'http://webservices.amazon.com/onca/xml?Service=AWSECommerceService&Operation=ItemLookup&ItemId=0679722769&ResponseGroup=ItemAttributes,Offers,Images,Reviews&Version=2009-01-06', 
         'expected': 'http://webservices.amazon.com/onca/xml?ItemId=0679722769&Operation=ItemLookup&ResponseGroup=ItemAttributes%2COffers%2CImages%2CReviews&Service=AWSECommerceService&Timestamp=2009-01-01T12%3A00%3A00Z&Version=2009-01-06&Signature=M%2Fy0%2BEAFFGaUAp4bWv%2FWEuXYah99pVsxvqtAuC8YN7I%3D' }
         ]
-
-    #secret = '1234567890' 
 
     #for url,signed in test_vectors.iteritems():
     for v in test_vectors:
