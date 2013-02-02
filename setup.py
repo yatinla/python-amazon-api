@@ -9,9 +9,10 @@ setup(name='python-amazon-api',
         long_description=open('README.rst').read() + '\n\n' + open('HISTORY.rst').read(),
         author='Mike Taylor',
         author_email='mike@taylorwebhome.org',
-        packages = ['awspyapi']
-        url="https://bitbucket.org/mediomuerto/python-amazon-api",
-        download_url="https://mediomuerto@bitbucket.org/mediomuerto/python-amazon-api.git",
+        packages = ['awspyapi'],
+
+        url="git://github.com/yatinla/python-amazon-api.git"
+        download_url="git://github.com/yatinla/python-amazon-api.git"
         license=open('LICENSE').read,
         include_package_data=True,
       )
