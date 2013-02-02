@@ -7,4 +7,5 @@ local_settings.py
 *.tag
 *.swp
 *.xml
+dist
 
