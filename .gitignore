@@ -8,4 +8,6 @@ local_settings.py
 *.swp
 *.xml
 dist
+*.egg*
+build
 
