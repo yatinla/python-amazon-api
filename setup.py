@@ -10,9 +10,8 @@ setup(name='python-amazon-api',
         author='Mike Taylor',
         author_email='mike@taylorwebhome.org',
         packages = ['awspyapi'],
-
-        url="git://github.com/yatinla/python-amazon-api.git"
-        download_url="git://github.com/yatinla/python-amazon-api.git"
+        url="git://github.com/yatinla/python-amazon-api.git",
+        download_url="git://github.com/yatinla/python-amazon-api.git",
         license=open('LICENSE').read,
         include_package_data=True,
       )
