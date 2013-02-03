@@ -325,32 +325,19 @@ class AwsSearch(object):
         if self.search_result_dom == None:
             raise AwsSearchException("No search results available.  Did you search yet?")
 
-        print "Look for items that match:"
-        for k,v in attributes.iteritems():
-            print k + ':' + v
-
         items = self.search_result_dom.getElementsByTagName('Item')
-        print 'Found items: ', items
 
         matches = []
 
         for item in items:
-            print 'Next item: ', item
             if attributes == None:
                 ''' Just return all items '''
                 matches.append(item)
             else:
                 attribs = item.getElementsByTagName("ItemAttributes")
-                print 'Found attribs: ', attribs
                 for a in attribs:
                     for k,v in attributes.iteritems():
-                        print 'k, v = ', k, v
                         attr = a.getElementsByTagName(k)
-                        print 'attr = ', attr
-                        print 'attr[0] = ', attr[0]
-                        print 'attr[0].tagName = ', attr[0].tagName
-                        print 'attr[0].firstChild == ', attr[0].firstChild
-                        print 'attr[0].firstChild.nodeValue == ', attr[0].firstChild.nodeValue
                         if attr[0].tagName == k and attr[0].firstChild.nodeValue == v:
                             matches.append(item)
                 
