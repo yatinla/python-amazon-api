@@ -191,14 +191,14 @@ class AwsSearch(object):
 
         img = self.search_result_dom.getElementsByTagName(img_size)
         ''' TODO: Maybe should return some particular string instead of empty? '''
-        url = '' 
+        url = None
         if img != None:
             for i in img:
                 img_url = i.getElementsByTagName("URL")
                 for u in img_url:
                     url = u.firstChild.data
                     break
-
+                break
         return url
 
     def get_small_image_url(self):
@@ -209,6 +209,22 @@ class AwsSearch(object):
 
     def get_large_image_url(self):
         return self._get_image_url('Large')
+
+
+    def get_detail_page_url(self):
+        '''
+        This is the URL for the main product page
+        '''
+        if self.search_result_dom == None:
+            raise AwsSearchException("No search results available.  Did you search yet?")
+        
+        detail_page_url_node = self.search_result_dom.getElementsByTagName('DetailPageURL')
+
+        if detail_page_url_node != None:
+            for u in detail_page_url_node:
+                return u.firstChild.data
+        return None 
+
 
 if __name__ == '__main__':
     '''
@@ -238,19 +254,36 @@ if __name__ == '__main__':
         print ("The search succeeded.")
 
         ''' First try to get the medium image '''
-        url = s.get_medium_image_url()
-        print ("Medium image URL = %s" % url )
-        ''' Try to open result in web browser or if not just pretty dump the dom '''
-        try:
-            webbrowser.open_new_tab(url)
-            f = open('aws.xml', 'w')
-            dom.writexml( f, addindent="  ", newl = "\n" )
-            f.close()
-        except:
-            print ("No web browser available.  Saving result to file aws.xml")
-            f = open('aws.xml', 'w')
-            dom.writexml( f, addindent="  ", newl = "\n" )
-            f.close()
+        med_img_url = s.get_medium_image_url()
+        if med_img_url != None:
+            print ("Medium image URL = %s" % med_img_url )
 
+        ''' Next try to get the main page for the item '''
+        main_url = s.get_detail_page_url()
+        if main_url != None:
+            print ("Detail Page URL = %s" % main_url )
+
+        if main_url != None and med_img_url != None:
+            ''' Make a simple web page, save it, and open it '''
+            html = '<!DOCTYPE HTML><head><title>Click me!</title></head><html>'
+            html += '<body><h1>Here is the search result</h1>'
+            html += '<a href="'+main_url+'"><img src="'+med_img_url+'"></a></body></html>'
+
+            f = open('aws.xml', 'w')
+            dom.writexml( f, addindent="  ", newl = "\n" )
+            f.close()
+            print("Search results saved to aws.xml")
+            f = open('index.html', 'w')
+            f.write(html)
+            f.close()
+            print("A small web page with image and link to item saved to index.html")
+
+            ''' Try to open result in web browser or if not just pretty dump the dom '''
+            try:
+                webbrowser.open_new_tab('index.html')
+            except:
+                print ("No web browser available.")
+        else:
+            print ("One or both of the image URL and the main URL were not found!")
 
 
