@@ -175,6 +175,23 @@ class AwsSearch(object):
             
         return self.search_result_dom
 
+    def get_errors(self):
+        ''' 
+        Call if do_search throws exception to get list of errors.
+        Returns a list of strings each with an error code.  Typically
+        there's only one like for example 'AWS.ECommerceService.NoExactMatches'
+        '''
+        errors = self.search_result_dom.getElementsByTagName('Errors')
+        err_list = []
+        if errors != None:
+            for err in errors:
+                code = err.getElementsByTagName("Code")
+                for c in code:
+                    err_list.append(c.firstChild.data)
+                    break
+
+        return err_list
+
     def _get_image_url(self, size='Medium'):
         ''' Internal worker for the other image URL methods.
             May return an empty string if URL not found for
@@ -244,8 +261,12 @@ if __name__ == '__main__':
 
     try:
         dom = s.do_search()
-    except e as AwsSearchException:
-        print("The search failed: %s", str(e))
+    except AwsSearchException as e:
+        print("The search failed: %s" % str(e))
+        el = s.get_errors()
+        for e in el:
+            print 'Error Code: ' + e
+
         sys.exit(-1)
 
     if dom == None:
