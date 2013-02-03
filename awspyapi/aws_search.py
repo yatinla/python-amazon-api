@@ -144,7 +144,11 @@ class AwsSearch(object):
         Perform the search given the provided parameters.  The result is returned as
         a minidom object but it is probably more useful to use the other methods
         such as get_small_image, get_item_asin, get_detail_page_url, etc. than 
-        to work with the raw dom result
+        to work with the raw dom result.
+
+            NOTE:   The search might "succeed" in the sense that it returns some XML
+                    but that doesn't mean it was truly successful.  One should always
+                    call get_errors() to see if there were any errors 
         '''
          
         ''' Create and sign the URL.  For the AWS URL we must create the SearchIndex parameter '''
@@ -165,21 +169,24 @@ class AwsSearch(object):
         f = urlopen( url_signed )
         self.search_result_dom = parse(f)
         f.close()
-
-        if self.search_result_dom.getElementsByTagName('Errors'):
-            ''' TODO: Return list of all errors maybe as a dictionary like
-             
-                {'Code': 'Your request is missing the Service parameter. Please add  the Service parameter to your request and retry'}
-            '''
-            raise  AwsSearchException("An error occurred")
-            
+           
+        ''' NOTE:  There might be an error in the search.  The caller
+            should check with get_errors
+        ''' 
         return self.search_result_dom
 
     def get_errors(self):
         ''' 
-        Call if do_search throws exception to get list of errors.
-        Returns a list of strings each with an error code.  Typically
-        there's only one like for example 'AWS.ECommerceService.NoExactMatches'
+        This method should *always* be called if do_search does not
+        return None as the result.  The XML DOM returned by do_search
+        could still contain errors reported from the Amazon web services.
+
+        Returns a list of strings each with an error code or None
+        if no errors are found.  
+            
+        Typically there's only one like for example 
+
+            'AWS.ECommerceService.NoExactMatches'
         '''
         errors = self.search_result_dom.getElementsByTagName('Errors')
         err_list = []
@@ -189,10 +196,12 @@ class AwsSearch(object):
                 for c in code:
                     err_list.append(c.firstChild.data)
                     break
+        if len(err_list) == 0:
+            return None
+        else:
+            return err_list
 
-        return err_list
-
-    def _get_image_url(self, size='Medium'):
+    def _get_image_url(self, size='Medium', item=None):
         ''' Internal worker for the other image URL methods.
             May return an empty string if URL not found for
             given image size which must be one of the valid
@@ -203,10 +212,14 @@ class AwsSearch(object):
                 Large
         '''
         img_size = size+'Image'
-        if self.search_result_dom == None:
-            raise AwsSearchException("No search results available.  Did you search yet?")
 
-        img = self.search_result_dom.getElementsByTagName(img_size)
+        if item == None:
+            if self.search_result_dom == None:
+                raise AwsSearchException("No search results available.  Did you search yet?")
+            img = self.search_result_dom.getElementsByTagName(img_size)
+        else:
+            img = item.getElementsByTagName(img_size)
+
         ''' TODO: Maybe should return some particular string instead of empty? '''
         url = None
         if img != None:
@@ -216,32 +229,154 @@ class AwsSearch(object):
                     url = u.firstChild.data
                     break
                 break
+
         return url
 
-    def get_small_image_url(self):
-        return self._get_image_url('Small')
+    def get_small_image_url(self, item=None):
+        return self._get_image_url('Small',item)
 
-    def get_medium_image_url(self):
-        return self._get_image_url('Medium')
+    def get_medium_image_url(self, item=None):
+        return self._get_image_url('Medium',item)
 
-    def get_large_image_url(self):
-        return self._get_image_url('Large')
+    def get_large_image_url(self,item=None):
+        return self._get_image_url('Large',item)
 
 
-    def get_detail_page_url(self):
+    def get_detail_page_url(self, item=None):
         '''
-        This is the URL for the main product page
+        This is the URL for the main product page.  If item==None
+        it just finds the DetailPageURL for the first item found.
+        Otherwise, it returns the one for the given item
+        '''
+        detail_page_url_node = None 
+
+        if item == None: 
+            if self.search_result_dom == None:
+                raise AwsSearchException("No search results available.  Did you search yet?")
+      
+            ''' Return DetailPageUrl for the first item found '''
+            items = self.search_result_dom.getElementsByTagName('Item')
+            for item in items:
+                detail_page_url_node = self.search_result_dom.getElementsByTagName('DetailPageURL')
+                break
+        else:
+            detail_page_url_node = item.getElementsByTagName('DetailPageURL')
+           
+        url = None 
+        if detail_page_url_node != None:
+            for u in detail_page_url_node:
+                url = u.firstChild.data
+                break
+        return url 
+
+    def get_item_bindings(self):
+        '''
+        Return a set of strings for the available bindings in the list of items
+        or the empty list if no bindings found.  Note that this is for all
+        possible bindings in all items returned by the search
         '''
         if self.search_result_dom == None:
             raise AwsSearchException("No search results available.  Did you search yet?")
+
+        binding_set = set([])
+        bindings = self.search_result_dom.getElementsByTagName('Binding')
+        for b in bindings:
+            binding_set.add(b.firstChild.nodeValue)
+
+        return binding_set
+
+    def get_items_by_attributes(self, attributes=None):
+        ''' 
+        Given a completed search, look for the Item in the list of Items
+        that has attributes matching those in the input dictionary.  
+        Examples of attributes for a Movie:
+
+            <Actor>Harrison Ford</Actor>
+            <Actor>Rutger Hauer</Actor>
+            <Actor>Sean Young</Actor>
+            <Actor>Edward James Olmos</Actor>
+            <AudienceRating>R (Restricted)</AudienceRating>
+            <Binding>Amazon Instant Video</Binding>
+            <Creator Role="Producer">Michael Deeley</Creator>
+            <Creator Role="Writer">Hampton Fancher</Creator>
+            <Creator Role="Writer">David Peoples</Creator>
+            <Director>Ridley Scott</Director>
+            <Genre>Science Fiction</Genre>
+            <ProductGroup>Movie</ProductGroup>
+            <ProductTypeName>DOWNLOADABLE_MOVIE</ProductTypeName>
+            <ReleaseDate>2008-01-17</ReleaseDate>
+            <RunningTime Units="minutes">118</RunningTime>
+            <Studio>Warner Bros.</Studio>
+            <Title>Blade Runner: The Final Cut</Title>
+
+
+        So one could pass in the dictionary 
         
-        detail_page_url_node = self.search_result_dom.getElementsByTagName('DetailPageURL')
+            attributes = {'Genre':'Science Fiction', 'Binding':'Amazon Instant Video'} 
 
-        if detail_page_url_node != None:
-            for u in detail_page_url_node:
-                return u.firstChild.data
-        return None 
+        and it should return a list of one or more matching items.
 
+        If the list of attributes is empty it just returns all items
+
+        Return: List of matching DOM elements of type Item or empty list
+
+        '''
+
+        if self.search_result_dom == None:
+            raise AwsSearchException("No search results available.  Did you search yet?")
+
+        print "Look for items that match:"
+        for k,v in attributes.iteritems():
+            print k + ':' + v
+
+        items = self.search_result_dom.getElementsByTagName('Item')
+        print 'Found items: ', items
+
+        matches = []
+
+        for item in items:
+            print 'Next item: ', item
+            if attributes == None:
+                ''' Just return all items '''
+                matches.append(item)
+            else:
+                attribs = item.getElementsByTagName("ItemAttributes")
+                print 'Found attribs: ', attribs
+                for a in attribs:
+                    for k,v in attributes.iteritems():
+                        print 'k, v = ', k, v
+                        attr = a.getElementsByTagName(k)
+                        print 'attr = ', attr
+                        print 'attr[0] = ', attr[0]
+                        print 'attr[0].tagName = ', attr[0].tagName
+                        print 'attr[0].firstChild == ', attr[0].firstChild
+                        print 'attr[0].firstChild.nodeValue == ', attr[0].firstChild.nodeValue
+                        if attr[0].tagName == k and attr[0].firstChild.nodeValue == v:
+                            matches.append(item)
+                
+        return matches
+
+        '''
+        This is an example for how to walk the dom
+
+
+        root = dom.documentElement
+
+        for c in root.childNodes:
+            if c.nodeType != c.TEXT_NODE:
+                print c.tagName
+                if c.tagName == "Items":
+                    for item in c.childNodes:
+                        if item.nodeType != item.TEXT_NODE:
+                            print "\t" + item.tagName
+                            attribs = item.getElementsByTagName("ItemAttributes")
+                            for a in attribs:
+                                if a.nodeType != item.TEXT_NODE:
+                                    bindings = a.getElementsByTagName("Binding")
+                                    for b in bindings:
+                                        print b
+                                        print b.firstChild.nodeValue
+        '''
 
 if __name__ == '__main__':
     '''
@@ -259,28 +394,48 @@ if __name__ == '__main__':
 
     s = AwsSearch( search_index = sys.argv[1], search_params = {'Title':sys.argv[2] } )
 
-    try:
-        dom = s.do_search()
-    except AwsSearchException as e:
-        print("The search failed: %s" % str(e))
-        el = s.get_errors()
-        for e in el:
-            print 'Error Code: ' + e
-
-        sys.exit(-1)
+    dom = s.do_search()
 
     if dom == None:
-        print ("The search failed\n");
+        print ("The search did not return a DOM!\n");
+        sys.exit(-1)
     else:
-        print ("The search succeeded.")
+        errs = s.get_errors()
+        if errs != None:
+            print("The search returned errors:")
+            for i in errs.items:
+                print 'Error code: ', i
+            sys.exit(-1)
+        else:
+            print ("The search returned with no errors.")
+
+        ''' Get list of possible bindings '''
+        bindings = s.get_item_bindings()
+        print "Available bindings:"
+        for b in bindings:
+            print "\t",b
+
+        for tries in range(0,5): 
+            binding = raw_input('Enter binding type: ')
+
+            ''' Find item with that binding type '''
+            items = s.get_items_by_attributes({'Binding':binding})
+            if len(items) == 0:
+                print ("No items with that binding")
+            else:
+                break
+
+        if items == None or len(items) == 0:
+            print ("Didn't find items")
+            sys.exit(-1) 
 
         ''' First try to get the medium image '''
-        med_img_url = s.get_medium_image_url()
+        med_img_url = s.get_medium_image_url(items[0])
         if med_img_url != None:
             print ("Medium image URL = %s" % med_img_url )
 
         ''' Next try to get the main page for the item '''
-        main_url = s.get_detail_page_url()
+        main_url = s.get_detail_page_url(items[0])
         if main_url != None:
             print ("Detail Page URL = %s" % main_url )
 

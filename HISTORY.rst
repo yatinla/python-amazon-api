@@ -3,6 +3,15 @@
 History
 -------
 
+0.3.0 (2013-02-03)
++++++++++++++++++++
+
+- Superbowl Sunday!! Signifant refactoring not
+  necessarily backward compatible.  Add the ability
+  to search for items by attributes and get all available
+  bindings and specify a particular item when looking for
+  the image URL or the DetailsPageURL.
+
 0.2.1 (2013-02-02)
 +++++++++++++++++++
 
