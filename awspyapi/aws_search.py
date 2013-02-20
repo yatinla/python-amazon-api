@@ -73,7 +73,7 @@ class AwsSearch(object):
             'Magazines','Miscellaneous','Music','MusicTracks','MusicalInstruments',
             'MobileApps','OfficeProducts','OutdoorLiving','PCHardware','PetSupplies',
             'Photo','Shoes','Software','SportingGoods','Tools','Toys','UnboxVideo',
-            'VHS','Video','VideoGames','Watches','Wireless','WirelessAccessories'])
+            'VHS','Video','VideoGames','Watches','Wireless','WirelessAccessories','movies-tv'])
 
     # Immutable list of valid search parameters
     valid_search_params = set([
@@ -138,6 +138,186 @@ class AwsSearch(object):
         self.search_params = search_params
         ''' When a search is actuall performed this will be set to the resultant dom '''
         self.search_result_dom = None
+
+    def _get_attribute_value(self, item, attr):
+        ''' Internal worker for the other methods that retrieve
+            attributes such as Author etc.  Returns a set of
+            values matching the given attribute since some
+            cases such as Actor there are multiple values for
+            the same key
+        '''
+        if attr == None:
+            raise AwsSearchException("You must supply an attribute name such as 'Author'")
+        if item == None:
+            if self.search_result_dom == None:
+                raise AwsSearchException("No search results available.  Did you search yet?")
+            attributes = self.search_result_dom.getElementsByTagName('ItemAttributes')
+        else:
+            attributes = item.getElementsByTagName('ItemAttributes')
+
+        ''' TODO: Maybe should return some particular string instead of empty? '''
+        values = []
+        if attributes != None:
+            for a in attributes:
+                e = a.getElementsByTagName(attr)
+                for v in e:
+                    values.append(v.firstChild.data)
+        return values
+
+    ''' The following are likely most relevant to books. '''
+    def get_authors(self, item = None):
+        ''' Get Authors 
+
+            NOTE: returns a list in case there's more than one
+        '''
+        return self._get_attribute_value(item, 'Author')
+
+    def get_pub_date(self, item = None):
+        ''' Get publication date.  Really ought to be only one right?
+            Only going to return one
+        '''
+        values = self._get_attribute_value(item, 'PublicationDate')
+        if len(values) > 0:
+            return values[0]
+        else:
+            return None
+
+    def get_num_pages(self, item = None):
+        ''' Get number of pages '''
+        values = self._get_attribute_value(item, 'NumberOfPages')
+        if len(values) > 0:
+            return values[0]
+        else:
+            return None
+
+    ''' And these are more for movies '''
+    def get_actors(self, item=None):
+        ''' Return a list of actors.  This one is
+            definitely multi-valued
+        '''
+        return self._get_attribute_value( item, 'Actor')
+
+    def get_mpaa_rating(self, item=None):
+        ''' Get the movie rating, i.e., PG-13 etc. ''' 
+        values = self._get_attribute_value( item, 'AudienceRating')
+        if len(values) > 0:
+            return values[0]
+        else:
+            return None
+
+    def get_directors(self, item=None):
+        ''' Get the list of directors.  Probably only one but... '''
+        return self._get_attribute_value( item, 'Director')
+
+    def get_product_group(self, item=None):
+        ''' Like Movie or whatever.  Assume only one '''
+        values = self._get_attribute_value( item, 'ProductGroup')
+        if len(values) > 0:
+            return values[0]
+        else:
+            return None
+
+
+    def get_running_time(self, item=None):
+        ''' Running time of movie in minutes is what I will ASSume
+            for now since I've not seen otherwise but Amazon
+            allows for the possibility of other units.
+        <RunningTime Units="minutes">104</RunningTime>
+        '''
+        values = self._get_attribute_value( item, 'RunningTime')
+        if len(values) > 0:
+            return values[0]
+        else:
+            return None
+
+    def get_release_date(self, item=None):
+        ''' Release date of movie '''
+        values = self._get_attribute_value( item, 'ReleaseDate')
+        if len(values) > 0:
+            return values[0]
+        else:
+            return None
+
+    ''' These could be book or movie '''
+    def get_binding(self, item=None):
+        ''' Like Amazon Instant Video or Blu-ray or Paperback.  Assume only one '''
+        values = self._get_attribute_value( item, 'Binding')
+        if len(values) > 0:
+            return values[0]
+        else:
+            return None
+
+    def get_genres(self, item=None):
+        ''' Like Science Fiction etc.  Maybe more than one sometimes? '''
+        return self._get_attribute_value( item, 'Genre')
+        if len(values) > 0:
+            return values[0]
+        else:
+            return None
+
+    ''' Here are others but I'm not going to worry about them now 
+        <Languages>
+          <Language>
+            <Name>English</Name>
+            <Type>Subtitled</Type>
+          </Language>
+        </Languages>
+        <ProductTypeName>DOWNLOADABLE_MOVIE</ProductTypeName>
+        <Studio>Warner Bros.</Studio>
+        <Title>I Am Legend</Title>
+    '''
+
+    def get_small_image_url(self, item=None):
+        return self._get_image_url('Small',item)
+
+    def get_medium_image_url(self, item=None):
+        return self._get_image_url('Medium',item)
+
+    def get_large_image_url(self,item=None):
+        return self._get_image_url('Large',item)
+
+    def get_detail_page_url(self, item=None):
+        '''
+        This is the URL for the main product page.  If item==None
+        it just finds the DetailPageURL for the first item found.
+        Otherwise, it returns the one for the given item
+        '''
+        detail_page_url_node = None 
+
+        if item == None: 
+            if self.search_result_dom == None:
+                raise AwsSearchException("No search results available.  Did you search yet?")
+      
+            ''' Return DetailPageUrl for the first item found '''
+            items = self.search_result_dom.getElementsByTagName('Item')
+            for item in items:
+                detail_page_url_node = self.search_result_dom.getElementsByTagName('DetailPageURL')
+                break
+        else:
+            detail_page_url_node = item.getElementsByTagName('DetailPageURL')
+           
+        url = None 
+        if detail_page_url_node != None:
+            for u in detail_page_url_node:
+                url = u.firstChild.data
+                break
+        return url 
+
+    def get_item_bindings(self):
+        '''
+        Return a set of strings for the available bindings in the list of items
+        or the empty list if no bindings found.  Note that this is for all
+        possible bindings in all items returned by the search
+        '''
+        if self.search_result_dom == None:
+            raise AwsSearchException("No search results available.  Did you search yet?")
+
+        binding_set = set([])
+        bindings = self.search_result_dom.getElementsByTagName('Binding')
+        for b in bindings:
+            binding_set.add(b.firstChild.nodeValue)
+
+        return binding_set
 
     def do_search(self):
         '''
@@ -369,17 +549,28 @@ if __name__ == '__main__':
     '''
     Something to test with. You MUST have the AWS environment variables set
     '''
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3:
         print ("Call as \n")
-        print ("\taws_search SearchIndex Title\n")
+        print ("\taws_search SearchIndex Title [Author|Director]\n")
         print ("\t\tFor example:\n")
-        print ("\t\t\taws_search Books 'To Kill a Mockingbird'\n");
+        print ("\t\t\taws_search Video 'The Thing', 'John Carpenter' \n");
+        print ("Seems like Director might work best for movies and don't need author for books as much")
         sys.exit(0)
 
     print ("Search Index: %s" % sys.argv[1] )
     print ("Title: %s" % sys.argv[2] )
 
-    s = AwsSearch( search_index = sys.argv[1], search_params = {'Title':sys.argv[2] } )
+   
+    srch_params = {'Title': sys.argv[2]} 
+    if len(sys.argv) > 3:
+        if 'Books' == sys.argv[1]:
+            srch_params['Author'] = sys.argv[3]
+        elif 'Video' == sys.argv[1]:
+            srch_params['Director'] = sys.argv[3]
+        else:
+            pass
+
+    s = AwsSearch( search_index = sys.argv[1], search_params=srch_params )
 
     dom = s.do_search()
 
@@ -390,7 +581,7 @@ if __name__ == '__main__':
         errs = s.get_errors()
         if errs != None:
             print("The search returned errors:")
-            for i in errs.items:
+            for i in errs:
                 print 'Error code: ', i
             sys.exit(-1)
         else:
@@ -421,10 +612,46 @@ if __name__ == '__main__':
         if med_img_url != None:
             print ("Medium image URL = %s" % med_img_url )
 
+        small_img_url = s.get_small_image_url(items[0])
+        if small_img_url != None:
+            print ("Small image URL = %s" % small_img_url )
+
         ''' Next try to get the main page for the item '''
         main_url = s.get_detail_page_url(items[0])
         if main_url != None:
             print ("Detail Page URL = %s" % main_url )
+
+
+        product_group = s.get_product_group(items[0])
+        if product_group != None:
+            if product_group == 'Book':
+                print "It is a Book"
+                print "Here are some other attributes: "
+                authors = s.get_authors(items[0])
+                if authors != None:
+                    print "Here are the authors:"
+                    for a in authors:
+                        print a
+                pub_date = s.get_pub_date(items[0])
+                if pub_date != None:
+                    print "Published " + pub_date
+
+            elif product_group == 'Movie' or product_group == 'DVD' or product_group == 'Blu-ray':
+                print "It is a movie"
+                print "Here are some other attributes: "
+                run_time = s.get_running_time(items[0])
+                if run_time != None:
+                    print "Running time is " + run_time + " minutes"
+                directors = s.get_directors(items[0])
+                if directors != None:
+                    print "Director(s):"
+                    for d in directors:
+                        print d
+                rating = s.get_mpaa_rating(items[0])
+                if rating != None:
+                    print "The MPAA has rated this movie " + rating
+            else:
+                print "Product group is not recognized: " + product_group
 
         if main_url != None and med_img_url != None:
             ''' Make a simple web page, save it, and open it '''
