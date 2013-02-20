@@ -1,0 +1,11 @@
+HISTORY.rst
+LICENSE
+README.rst
+setup.py
+awspyapi/__init__.py
+awspyapi/aws_search.py
+awspyapi/aws_url.py
+python_amazon_api.egg-info/PKG-INFO
+python_amazon_api.egg-info/SOURCES.txt
+python_amazon_api.egg-info/dependency_links.txt
+python_amazon_api.egg-info/top_level.txt

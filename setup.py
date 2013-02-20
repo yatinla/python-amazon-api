@@ -13,7 +13,7 @@ setup(name='python-amazon-api',
         url="git://github.com/yatinla/python-amazon-api.git",
         download_url="git://github.com/yatinla/python-amazon-api.git",
         license=open('LICENSE').read,
-        data_files=[('', ['HISTORY.rst'])],
+        data_files=[('', ['HISTORY.rst']),('',['LICENSE'])],
         include_package_data=True,
       )
 
