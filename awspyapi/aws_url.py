@@ -92,10 +92,12 @@ class AwsUrl(object):
         # Now form signature
         msg = self.method + "\n" + 'webservices.amazon.com' + "\n" + \
             '/onca/xml' + "\n" + paramstring
+        '''
         print '--------------------------------------------------------------------'
         print 'For signing:'
         print msg
         print '--------------------------------------------------------------------'
+        '''
         m = hmac.new(key=self.secret, digestmod=hashlib.sha256)
         m.update(msg)
         digest = m.digest()

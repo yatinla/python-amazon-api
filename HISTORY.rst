@@ -3,6 +3,14 @@
 History
 -------
 
+0.4.0 (2013-02-19)
++++++++++++++++++++
+
+- Adding new functionality to return attributes
+  like Author, RunningTime, and such.
+
+  Removed more debugging prints
+
 0.3.1 (2013-02-03)
 +++++++++++++++++++
 

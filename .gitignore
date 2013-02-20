@@ -10,4 +10,5 @@ local_settings.py
 dist
 *.egg*
 build
+*.html*
 
