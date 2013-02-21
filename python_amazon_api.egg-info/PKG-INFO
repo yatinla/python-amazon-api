@@ -1,11 +1,11 @@
 Metadata-Version: 1.1
 Name: python-amazon-api
-Version: 0.4.1
+Version: 0.4.2
 Summary: A Python module for accessing Amazon's Product Advertising API
 Home-page: git://github.com/yatinla/python-amazon-api.git
 Author: Mike Taylor
 Author-email: mike@taylorwebhome.org
-License: <built-in method read of file object at 0x7fdd29450390>
+License: <built-in method read of file object at 0x7fa38234b390>
 Download-URL: git://github.com/yatinla/python-amazon-api.git
 Description: python-amazon-api: python module for Amazon's Product Advertising API
         =====================================================================
@@ -25,6 +25,16 @@ Description: python-amazon-api: python module for Amazon's Product Advertising A
         History
         -------
         
+        0.4.2 (2013-02-21)
+        +++++++++++++++++++
+        
+        - Well, found more problems and realized that not having
+          the option of an inexact match by attributes is just
+          too restrictive especially for movies where Amazon
+          considers the title as something like 
+          "Blade Runner Collector's 25th Anniversary Edition"
+          or whatever.
+          
         0.4.1 (2013-02-21)
         +++++++++++++++++++
         

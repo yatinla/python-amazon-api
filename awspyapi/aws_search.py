@@ -22,8 +22,11 @@ class AwsSearchException(Exception):
 
 class AwsSearch(object):
     '''
-    Perform a search for an item via Amazon Product Advertising API.
-    Here is the prototypical URL which is for a search for the
+    Perform a ItemSearch operation for an item via Amazon Product Advertising 
+    API.  Or can also do an ItemLookup operation instead if the asin is provided
+    instead of other parameters.
+
+    Here is the prototypical URL which is for a ItemSearch for the
     book 'Do Androids Dream of Electric Sheep'.  Obviously the
     linefeeds are added only for readability and it is actually
     one long URL
@@ -81,8 +84,8 @@ class AwsSearch(object):
             'AudienceRating','Manufacturer','MusicLabel','Composer','Publisher',
             'Brand','Conductor','Orchestra','TextStream','Cuisine','City','Neighborhood'])
 
-    def __init__(self, tag=None, key=None, secret=None, search_index ='Books', 
-                    search_params = {'Title': 'To Kill a Mockinbird'}):
+    def __init__(self, tag=None, key=None, secret=None, asin=None, search_index = None, 
+                    search_params = {}):
         '''
             Constructor for search including search_index and a model set of search parameters
             that is only intended to serve as an example but should return a valid result.
@@ -124,18 +127,28 @@ class AwsSearch(object):
                 raise AwsSearchException("Please set the AWS_SECRET environment variable or provide it to the constructor")
         else:
             self.secret = secret
+
+        if asin != None:
+            self.asin = asin
+        else:
+            ''' Must provide search index and at least one parameter if asin isn't none '''
+            if search_index == None or len(search_params) == 0:
+                raise(AwsSearchException("You must provide an ASIN or else a search index and at least one parameter"))
         
         ''' Validate the search_index is in the set of valid ones '''            
-        if not search_index in AwsSearch.valid_search_indices:
-            raise AwsSearchException("Invalid search index.  See valid_search_indices set")
-       
-        ''' Likewise for all parameters '''
-        for k,v in search_params.iteritems():
-            if not k in AwsSearch.valid_search_params:
-                raise AwsSearchException("Paramter %s is not a valid parameter" % k )
 
-        self.search_index = search_index
-        self.search_params = dict.copy(search_params)
+        if search_index != None:
+            if not search_index in AwsSearch.valid_search_indices:
+                raise AwsSearchException("Invalid search index.  See valid_search_indices set")
+            self.search_index = search_index
+
+        if len(search_params) != 0: 
+            ''' Likewise for all parameters '''
+            for k,v in search_params.iteritems():
+                if not k in AwsSearch.valid_search_params:
+                    raise AwsSearchException("Paramter %s is not a valid parameter" % k )
+            self.search_params = dict.copy(search_params)
+
         ''' When a search is actuall performed this will be set to the resultant dom '''
         self.search_result_dom = None
 
@@ -327,6 +340,49 @@ class AwsSearch(object):
                     binding_set.add(b.firstChild.nodeValue)
 
         return binding_set
+
+    def get_item_asin(self, item):
+        '''
+            After doing a search (or a lookup but it would be redundant) get the
+            ASIN for an item
+        '''
+        asin = item.getElementsByTagName('ASIN')
+        ''' Really don't expect more than one but...'''
+        for a in asin:
+            self.asin = a.firstChild.nodeValue
+            return self.asin
+        return ''
+         
+    def do_item_lookup(self):
+        ''' Perform an ItemLookup operation.  Will raise an exception if asin is None or empty '''
+        if self.asin == None or len(self.asin) == 0:
+            raise(AwsSearchException("ASIN must be provided for do_item_lookup"))
+
+        ''' Create and sign the URL.  For the AWS URL we must create the SearchIndex parameter '''
+        search_params = {}
+        search_params['IdType'] = 'ASIN'
+        search_params['ItemId'] = self.asin
+        search_params['ResponseGroup'] ='Images,ItemAttributes'
+        ''' And of course need the operation '''
+        search_params['Operation'] = 'ItemLookup'
+
+        aws_url = AwsUrl( 'GET', params = search_params, tag = self.tag, key = self.key, secret = self.secret )
+
+        ''' Sign the URL '''
+        url_signed = aws_url.signed_url()
+
+        f = urlopen( url_signed )
+        self.search_result_dom = parse(f)
+        f.close()
+
+        if self.search_result_dom != None:
+            ''' Get what should be the only item and return it '''
+            items = self.search_result_dom.getElementsByTagName('Item')
+            for i in items:
+                ''' Better be only one so assume there is.  If AWS gets
+                    that broken then what could we do but return the first anyway? '''
+                return i
+        return None
 
     def do_search(self):
         '''
@@ -647,47 +703,72 @@ if __name__ == '__main__':
             print ("Didn't find items")
             sys.exit(-1) 
 
+        ''' Get the ASIN for the first of the items and do a lookup '''
+        try:
+            asin = s.get_item_asin(items[0])
+            print "\t\t*********** Item ASIN: " + asin
+        except Exception as e:
+            print "Exception trying to get ASIN: ", str(e)
+            sys.exit(-1)
+
+        ''' Now lookup just that item only as a test of the functionality '''
+        try:
+            print "\t\tTrying Item Lookup for ASIN"
+            item = s.do_item_lookup()
+            errs = s.get_errors()
+            if errs != None:
+                print("The ItemLookup returned errors:")
+                for i in errs:
+                    print 'Error code: ', i
+                sys.exit(-1)
+            else:
+                print "\t\tItem ItemLookup succeeded.  Returned item ", item
+            
+        except Exception as e:
+            print "\t\tException trying to do ItemLookup: ", str(e)
+            sys.exit(-1)
+
         ''' First try to get the medium image '''
-        med_img_url = s.get_medium_image_url(items[0])
+        med_img_url = s.get_medium_image_url(item)
         if med_img_url != None:
             print ("Medium image URL = %s" % med_img_url )
 
-        small_img_url = s.get_small_image_url(items[0])
+        small_img_url = s.get_small_image_url(item)
         if small_img_url != None:
             print ("Small image URL = %s" % small_img_url )
 
         ''' Next try to get the main page for the item '''
-        main_url = s.get_detail_page_url(items[0])
+        main_url = s.get_detail_page_url(item)
         if main_url != None:
             print ("Detail Page URL = %s" % main_url )
 
 
-        product_group = s.get_product_group(items[0])
+        product_group = s.get_product_group(item)
         if product_group != None:
             if product_group == 'Book':
                 print "It is a Book"
                 print "Here are some other attributes: "
-                authors = s.get_authors(items[0])
+                authors = s.get_authors(item)
                 if authors != None:
                     print "Here are the authors:"
                     for a in authors:
                         print a
-                pub_date = s.get_pub_date(items[0])
+                pub_date = s.get_pub_date(item)
                 if pub_date != None:
                     print "Published " + pub_date
 
             elif product_group == 'Movie' or product_group == 'DVD' or product_group == 'Blu-ray':
                 print "It is a movie"
                 print "Here are some other attributes: "
-                run_time = s.get_running_time(items[0])
+                run_time = s.get_running_time(item)
                 if run_time != None:
                     print "Running time is " + run_time + " minutes"
-                directors = s.get_directors(items[0])
+                directors = s.get_directors(item)
                 if directors != None:
                     print "Director(s):"
                     for d in directors:
                         print d
-                rating = s.get_mpaa_rating(items[0])
+                rating = s.get_mpaa_rating(item)
                 if rating != None:
                     print "The MPAA has rated this movie " + rating
             else:
@@ -700,7 +781,8 @@ if __name__ == '__main__':
             html += '<a href="'+main_url+'"><img src="'+med_img_url+'"></a></body></html>'
 
             f = open('aws.xml', 'w')
-            dom.writexml( f, addindent="  ", newl = "\n" )
+            #dom.writexml( f, addindent="  ", newl = "\n" )
+            item.writexml( f, addindent="  ", newl = "\n" )
             f.close()
             print("Search results saved to aws.xml")
             f = open('index.html', 'w')

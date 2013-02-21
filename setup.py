@@ -4,7 +4,7 @@ except ImportError:
         from distutils.core import setup
 
 setup(name='python-amazon-api',
-        version='0.4.2',
+        version='0.5.0',
         description="A Python module for accessing Amazon's Product Advertising API",
         long_description=open('README.rst').read() + '\n\n' + open('HISTORY.rst').read(),
         author='Mike Taylor',

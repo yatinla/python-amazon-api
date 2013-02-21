@@ -3,6 +3,16 @@
 History
 -------
 
+0.5.0 (2013-02-22)
++++++++++++++++++++
+
+- Realized that it is silly not to use the ASIN and save it in the database.
+  I want a specific Item not just whatever is returned by each search.
+  So changed AwsSearch so that now it can take an ASIN which of course
+  kind of makes the name wrong but oh well for now it'll do.  And it
+  doesn't have to take the ASIN.  I can do a search first and then
+  pick and item and get the ASIN
+
 0.4.2 (2013-02-21)
 +++++++++++++++++++
 
