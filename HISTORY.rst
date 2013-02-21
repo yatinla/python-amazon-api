@@ -3,6 +3,24 @@
 History
 -------
 
+0.4.1 (2013-02-21)
++++++++++++++++++++
+
+- The AwsSearch construction would overwrite the callers
+  search parameters with the list of all possible ones
+
+- Remove accidental second version of get_item_bindings
+
+- get_items_by_attributes really didn't work correctly at
+  all.  Now it only returns the items that have Attributes
+  with values that match all of those in the input dictionary.
+  It is permissable for an item to havem multiple attributes
+  with the same tag such as Actor and not all of them have
+  to match but at least one has to match the desired value.
+  This seems like the sensible thing for movie searches
+  since they do have multiple Actor tags in the Attributes.
+  
+
 0.4.0 (2013-02-19)
 +++++++++++++++++++
 

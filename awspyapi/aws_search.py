@@ -135,9 +135,10 @@ class AwsSearch(object):
                 raise AwsSearchException("Paramter %s is not a valid parameter" % k )
 
         self.search_index = search_index
-        self.search_params = search_params
+        self.search_params = dict.copy(search_params)
         ''' When a search is actuall performed this will be set to the resultant dom '''
         self.search_result_dom = None
+
 
     def _get_attribute_value(self, item, attr):
         ''' Internal worker for the other methods that retrieve
@@ -303,19 +304,25 @@ class AwsSearch(object):
                 break
         return url 
 
-    def get_item_bindings(self):
+    def get_item_bindings(self, items=None):
+    
         '''
         Return a set of strings for the available bindings in the list of items
         or the empty list if no bindings found.  Note that this is for all
         possible bindings in all items returned by the search
         '''
-        if self.search_result_dom == None:
-            raise AwsSearchException("No search results available.  Did you search yet?")
+        if items == None:
+            if self.search_result_dom == None:
+                raise AwsSearchException("No search results available.  Did you search yet?")
 
         binding_set = set([])
-        bindings = self.search_result_dom.getElementsByTagName('Binding')
-        for b in bindings:
-            binding_set.add(b.firstChild.nodeValue)
+        if items == None:
+            bindings = self.search_result_dom.getElementsByTagName('Binding')
+        else:
+            for i in items:
+                bindings = i.getElementsByTagName('Binding')
+                for b in bindings:
+                    binding_set.add(b.firstChild.nodeValue)
 
         return binding_set
 
@@ -449,22 +456,6 @@ class AwsSearch(object):
                 break
         return url 
 
-    def get_item_bindings(self):
-        '''
-        Return a set of strings for the available bindings in the list of items
-        or the empty list if no bindings found.  Note that this is for all
-        possible bindings in all items returned by the search
-        '''
-        if self.search_result_dom == None:
-            raise AwsSearchException("No search results available.  Did you search yet?")
-
-        binding_set = set([])
-        bindings = self.search_result_dom.getElementsByTagName('Binding')
-        for b in bindings:
-            binding_set.add(b.firstChild.nodeValue)
-
-        return binding_set
-
     def get_items_by_attributes(self, attributes=None):
         ''' 
         Given a completed search, look for the Item in the list of Items
@@ -501,6 +492,8 @@ class AwsSearch(object):
         Return: List of matching DOM elements of type Item or empty list
 
         '''
+        if attributes != None:
+            print "attributes on entry: ", attributes
 
         if self.search_result_dom == None:
             raise AwsSearchException("No search results available.  Did you search yet?")
@@ -515,12 +508,23 @@ class AwsSearch(object):
                 matches.append(item)
             else:
                 attribs = item.getElementsByTagName("ItemAttributes")
-                for a in attribs:
-                    for k,v in attributes.iteritems():
+                count = 0
+                for k,v in attributes.iteritems():
+                    for a in attribs:
+                        ''' If there is more than one attribute by the
+                            same name, such as Actor, then so long
+                            as one of them matches we're OK
+                        '''
                         attr = a.getElementsByTagName(k)
-                        if attr[0].tagName == k and attr[0].firstChild.nodeValue == v:
-                            matches.append(item)
-                
+                        for m in attr:
+                            if m.tagName == k and m.firstChild.nodeValue == v:
+                                count += 1
+                    
+                if count == len(attributes):
+                    ''' All the desired attributes match this item '''
+                    matches.append(item)
+
+        print "Number of matching items: ", len(matches)
         return matches
 
         '''
@@ -570,9 +574,13 @@ if __name__ == '__main__':
         else:
             pass
 
+    print "srch_params before: ", srch_params
     s = AwsSearch( search_index = sys.argv[1], search_params=srch_params )
+    print "srch_params after AwsSearch: ", srch_params
 
     dom = s.do_search()
+
+    print "srch_params after do_search: ", srch_params
 
     if dom == None:
         print ("The search did not return a DOM!\n");
@@ -587,8 +595,16 @@ if __name__ == '__main__':
         else:
             print ("The search returned with no errors.")
 
+        ''' First find exact match '''
+
+        print "Look for exact match for ", srch_params
+        items = s.get_items_by_attributes(srch_params)
+        if items == None:
+            print "Did not find any exact match for desired parameters"
+            sys.exit(0)
+
         ''' Get list of possible bindings '''
-        bindings = s.get_item_bindings()
+        bindings = s.get_item_bindings(items)
         print "Available bindings:"
         for b in bindings:
             print "\t",b
