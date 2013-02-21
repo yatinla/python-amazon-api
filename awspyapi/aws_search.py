@@ -318,6 +318,8 @@ class AwsSearch(object):
         binding_set = set([])
         if items == None:
             bindings = self.search_result_dom.getElementsByTagName('Binding')
+            for b in bindings:
+                binding_set.add(b.firstChild.nodeValue)
         else:
             for i in items:
                 bindings = i.getElementsByTagName('Binding')
@@ -456,7 +458,7 @@ class AwsSearch(object):
                 break
         return url 
 
-    def get_items_by_attributes(self, attributes=None):
+    def get_items_by_attributes(self, attributes=None, loose=True):
         ''' 
         Given a completed search, look for the Item in the list of Items
         that has attributes matching those in the input dictionary.  
@@ -489,11 +491,21 @@ class AwsSearch(object):
 
         If the list of attributes is empty it just returns all items
 
+        If loose is True then it matches so long as the desired attribute
+        value is in the tag value, for example with loose=True then a search
+        for Title = Blade Runner would match
+            
+                     Blade Runner Collector's Edition
+                     
+        whereas with loose = False that would not be a match.  Generally a 
+        bad idea for movies since Amazon has a bazillion copies of some
+        of them in all different bindings (DVD, Blu-ray, etc.) but if you
+        insist on an exact match to the title then you might find only one
+        if any.
+
         Return: List of matching DOM elements of type Item or empty list
 
         '''
-        if attributes != None:
-            print "attributes on entry: ", attributes
 
         if self.search_result_dom == None:
             raise AwsSearchException("No search results available.  Did you search yet?")
@@ -517,14 +529,18 @@ class AwsSearch(object):
                         '''
                         attr = a.getElementsByTagName(k)
                         for m in attr:
-                            if m.tagName == k and m.firstChild.nodeValue == v:
-                                count += 1
+                            if m.tagName == k:
+                                if loose:
+                                    if v in m.firstChild.nodeValue:
+                                        count += 1
+                                else:
+                                    if v == m.firstChild.nodeValue:
+                                        count += 1
                     
                 if count == len(attributes):
                     ''' All the desired attributes match this item '''
                     matches.append(item)
 
-        print "Number of matching items: ", len(matches)
         return matches
 
         '''
@@ -603,7 +619,15 @@ if __name__ == '__main__':
             print "Did not find any exact match for desired parameters"
             sys.exit(0)
 
-        ''' Get list of possible bindings '''
+        try:
+            ''' First try without items '''
+            print "Try without items to get bindings:"
+            bindings = s.get_item_bindings()
+            print "without items bindings: ", bindings
+        except:
+            print "get_item_bindings is broke without items param"
+
+        ''' Get list of possible bindings with loose match '''
         bindings = s.get_item_bindings(items)
         print "Available bindings:"
         for b in bindings:

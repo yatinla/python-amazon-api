@@ -3,6 +3,16 @@
 History
 -------
 
+0.4.2 (2013-02-21)
++++++++++++++++++++
+
+- Well, found more problems and realized that not having
+  the option of an inexact match by attributes is just
+  too restrictive especially for movies where Amazon
+  considers the title as something like 
+  "Blade Runner Collector's 25th Anniversary Edition"
+  or whatever.
+  
 0.4.1 (2013-02-21)
 +++++++++++++++++++
 

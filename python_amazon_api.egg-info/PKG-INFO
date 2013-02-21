@@ -1,11 +1,11 @@
 Metadata-Version: 1.1
 Name: python-amazon-api
-Version: 0.4.0
+Version: 0.4.1
 Summary: A Python module for accessing Amazon's Product Advertising API
 Home-page: git://github.com/yatinla/python-amazon-api.git
 Author: Mike Taylor
 Author-email: mike@taylorwebhome.org
-License: <built-in method read of file object at 0x7f5c0b8b94b0>
+License: <built-in method read of file object at 0x7fdd29450390>
 Download-URL: git://github.com/yatinla/python-amazon-api.git
 Description: python-amazon-api: python module for Amazon's Product Advertising API
         =====================================================================
@@ -24,6 +24,24 @@ Description: python-amazon-api: python module for Amazon's Product Advertising A
         
         History
         -------
+        
+        0.4.1 (2013-02-21)
+        +++++++++++++++++++
+        
+        - The AwsSearch construction would overwrite the callers
+          search parameters with the list of all possible ones
+        
+        - Remove accidental second version of get_item_bindings
+        
+        - get_items_by_attributes really didn't work correctly at
+          all.  Now it only returns the items that have Attributes
+          with values that match all of those in the input dictionary.
+          It is permissable for an item to havem multiple attributes
+          with the same tag such as Actor and not all of them have
+          to match but at least one has to match the desired value.
+          This seems like the sensible thing for movie searches
+          since they do have multiple Actor tags in the Attributes.
+          
         
         0.4.0 (2013-02-19)
         +++++++++++++++++++
