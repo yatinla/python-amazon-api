@@ -178,7 +178,6 @@ class AwsSearch(object):
                     values.append(v.firstChild.data)
         return values
 
-    ''' The following are likely most relevant to books. '''
     def get_authors(self, item = None):
         ''' Get Authors 
 
@@ -191,6 +190,39 @@ class AwsSearch(object):
             Only going to return one
         '''
         values = self._get_attribute_value(item, 'PublicationDate')
+        if len(values) > 0:
+            return values[0]
+        else:
+            return None
+
+    def get_title(self, item = None):
+        ''' Get Title. Better be only going to return one
+        '''
+        values = self._get_attribute_value(item, 'Title')
+        if len(values) > 0:
+            return values[0]
+        else:
+            return None
+
+    def get_page_count(self, item = None):
+        ''' Get pages obviously for books.  '''
+        values = self._get_attribute_value(item, 'NumberOfPages')
+        if len(values) > 0:
+            return values[0]
+        else:
+            return None
+
+    def get_creator(self, item = None):
+        ''' Get creator '''
+        values = self._get_attribute_value(item, 'Creator')
+        if len(values) > 0:
+            return values[0]
+        else:
+            return None
+
+    def get_format(self, item = None):
+        ''' Get Format '''
+        values = self._get_attribute_value(item, 'Format')
         if len(values) > 0:
             return values[0]
         else:
@@ -378,11 +410,15 @@ class AwsSearch(object):
         if self.search_result_dom != None:
             ''' Get what should be the only item and return it '''
             items = self.search_result_dom.getElementsByTagName('Item')
-            for i in items:
-                ''' Better be only one so assume there is.  If AWS gets
-                    that broken then what could we do but return the first anyway? '''
-                return i
-        return None
+            if items == None:
+                return None
+            else:
+                for i in items:
+                    ''' Better be only one so assume there is.  If AWS gets
+                        that broken then what could we do but return the first anyway? '''
+                    return i
+        else:
+            return None
 
     def do_search(self):
         '''
@@ -625,39 +661,45 @@ if __name__ == '__main__':
     '''
     Something to test with. You MUST have the AWS environment variables set
     '''
-    if len(sys.argv) < 3:
-        print ("Call as \n")
-        print ("\taws_search SearchIndex Title [Author|Director]\n")
-        print ("\t\tFor example:\n")
-        print ("\t\t\taws_search Video 'The Thing', 'John Carpenter' \n");
-        print ("Seems like Director might work best for movies and don't need author for books as much")
-        sys.exit(0)
-
-    print ("Search Index: %s" % sys.argv[1] )
-    print ("Title: %s" % sys.argv[2] )
-
-   
-    srch_params = {'Title': sys.argv[2]} 
-    if len(sys.argv) > 3:
-        if 'Books' == sys.argv[1]:
-            srch_params['Author'] = sys.argv[3]
-        elif 'Video' == sys.argv[1]:
-            srch_params['Director'] = sys.argv[3]
-        else:
-            pass
-
-    print "srch_params before: ", srch_params
-    s = AwsSearch( search_index = sys.argv[1], search_params=srch_params )
-    print "srch_params after AwsSearch: ", srch_params
-
-    dom = s.do_search()
-
-    print "srch_params after do_search: ", srch_params
-
-    if dom == None:
-        print ("The search did not return a DOM!\n");
-        sys.exit(-1)
+    if len(sys.argv) == 2:
+        print "Assume that you only provided an ASIN"
+        s = AwsSearch(asin=sys.argv[1])
+        item = s.do_item_lookup() 
+        if item == None:
+            print "ItemLookup failed!"
+            sys.exit(-1)
     else:
+        if len(sys.argv) < 3:
+            print ("Call as \n")
+            print ("\taws_search SearchIndex Title [Author|Director]\n")
+            print ("\t\tFor example:\n")
+            print ("\t\t\taws_search Video 'The Thing', 'John Carpenter' \n");
+            print ("Seems like Director might work best for movies and don't need author for books as much")
+            sys.exit(0)
+
+        print ("Search Index: %s" % sys.argv[1] )
+        print ("Title: %s" % sys.argv[2] )
+   
+        srch_params = {'Title': sys.argv[2]} 
+        if len(sys.argv) > 3:
+            if 'Books' == sys.argv[1]:
+                srch_params['Author'] = sys.argv[3]
+            elif 'Video' == sys.argv[1]:
+                srch_params['Director'] = sys.argv[3]
+            else:
+                pass
+
+        print "srch_params before: ", srch_params
+        s = AwsSearch( search_index = sys.argv[1], search_params=srch_params )
+        print "srch_params after AwsSearch: ", srch_params
+
+        dom = s.do_search()
+
+        print "srch_params after do_search: ", srch_params
+
+        if dom == None:
+            print ("The search did not return a DOM!\n");
+            sys.exit(-1)
         errs = s.get_errors()
         if errs != None:
             print("The search returned errors:")
@@ -702,100 +744,79 @@ if __name__ == '__main__':
         if items == None or len(items) == 0:
             print ("Didn't find items")
             sys.exit(-1) 
-
-        ''' Get the ASIN for the first of the items and do a lookup '''
-        try:
-            asin = s.get_item_asin(items[0])
-            print "\t\t*********** Item ASIN: " + asin
-        except Exception as e:
-            print "Exception trying to get ASIN: ", str(e)
-            sys.exit(-1)
-
-        ''' Now lookup just that item only as a test of the functionality '''
-        try:
-            print "\t\tTrying Item Lookup for ASIN"
-            item = s.do_item_lookup()
-            errs = s.get_errors()
-            if errs != None:
-                print("The ItemLookup returned errors:")
-                for i in errs:
-                    print 'Error code: ', i
-                sys.exit(-1)
-            else:
-                print "\t\tItem ItemLookup succeeded.  Returned item ", item
-            
-        except Exception as e:
-            print "\t\tException trying to do ItemLookup: ", str(e)
-            sys.exit(-1)
-
-        ''' First try to get the medium image '''
-        med_img_url = s.get_medium_image_url(item)
-        if med_img_url != None:
-            print ("Medium image URL = %s" % med_img_url )
-
-        small_img_url = s.get_small_image_url(item)
-        if small_img_url != None:
-            print ("Small image URL = %s" % small_img_url )
-
-        ''' Next try to get the main page for the item '''
-        main_url = s.get_detail_page_url(item)
-        if main_url != None:
-            print ("Detail Page URL = %s" % main_url )
-
-
-        product_group = s.get_product_group(item)
-        if product_group != None:
-            if product_group == 'Book':
-                print "It is a Book"
-                print "Here are some other attributes: "
-                authors = s.get_authors(item)
-                if authors != None:
-                    print "Here are the authors:"
-                    for a in authors:
-                        print a
-                pub_date = s.get_pub_date(item)
-                if pub_date != None:
-                    print "Published " + pub_date
-
-            elif product_group == 'Movie' or product_group == 'DVD' or product_group == 'Blu-ray':
-                print "It is a movie"
-                print "Here are some other attributes: "
-                run_time = s.get_running_time(item)
-                if run_time != None:
-                    print "Running time is " + run_time + " minutes"
-                directors = s.get_directors(item)
-                if directors != None:
-                    print "Director(s):"
-                    for d in directors:
-                        print d
-                rating = s.get_mpaa_rating(item)
-                if rating != None:
-                    print "The MPAA has rated this movie " + rating
-            else:
-                print "Product group is not recognized: " + product_group
-
-        if main_url != None and med_img_url != None:
-            ''' Make a simple web page, save it, and open it '''
-            html = '<!DOCTYPE HTML><head><title>Click me!</title></head><html>'
-            html += '<body><h1>Here is the search result</h1>'
-            html += '<a href="'+main_url+'"><img src="'+med_img_url+'"></a></body></html>'
-
-            f = open('aws.xml', 'w')
-            #dom.writexml( f, addindent="  ", newl = "\n" )
-            item.writexml( f, addindent="  ", newl = "\n" )
-            f.close()
-            print("Search results saved to aws.xml")
-            f = open('index.html', 'w')
-            f.write(html)
-            f.close()
-            print("A small web page with image and link to item saved to index.html")
-
-            ''' Try to open result in web browser or if not just pretty dump the dom '''
-            try:
-                webbrowser.open_new_tab('index.html')
-            except:
-                print ("No web browser available.")
         else:
-            print ("One or both of the image URL and the main URL were not found!")
+            item = items[0]
+
+    ''' Now we have a single item either by ItemSearch or ItemLookup '''
+
+    ''' First try to get the medium image '''
+    med_img_url = s.get_medium_image_url(item)
+    if med_img_url != None:
+        print ("Medium image URL = %s" % med_img_url )
+
+    small_img_url = s.get_small_image_url(item)
+    if small_img_url != None:
+        print ("Small image URL = %s" % small_img_url )
+
+    ''' Next try to get the main page for the item '''
+    main_url = s.get_detail_page_url(item)
+    if main_url != None:
+        print ("Detail Page URL = %s" % main_url )
+
+
+    product_group = s.get_product_group(item)
+    if product_group != None:
+        if product_group == 'Book':
+            print "It is a Book"
+            print "Here are some other attributes: "
+            authors = s.get_authors(item)
+            if authors != None:
+                print "Here are the authors:"
+                for a in authors:
+                    print a
+            pub_date = s.get_pub_date(item)
+            if pub_date != None:
+                print "Published " + pub_date
+
+        elif product_group == 'Movie' or product_group == 'DVD' or product_group == 'Blu-ray':
+            print "It is a movie"
+            print "Here are some other attributes: "
+            run_time = s.get_running_time(item)
+            if run_time != None:
+                print "Running time is " + run_time + " minutes"
+            directors = s.get_directors(item)
+            if directors != None:
+                print "Director(s):"
+                for d in directors:
+                    print d
+            rating = s.get_mpaa_rating(item)
+            if rating != None:
+                print "The MPAA has rated this movie " + rating
+        else:
+            print "Product group is not recognized: " + product_group
+
+    if main_url != None and med_img_url != None:
+        ''' Make a simple web page, save it, and open it '''
+        html = '<!DOCTYPE HTML><head><title>Click me!</title></head><html>'
+        html += '<body><h1>Here is the search result</h1>'
+        html += '<a href="'+main_url+'"><img src="'+med_img_url+'"></a></body></html>'
+
+        f = open('aws.xml', 'w')
+        #dom.writexml( f, addindent="  ", newl = "\n" )
+        item.writexml( f, addindent="  ", newl = "\n" )
+        f.close()
+        print("Search results saved to aws.xml")
+        f = open('index.html', 'w')
+        f.write(html)
+        f.close()
+        print("A small web page with image and link to item saved to index.html")
+
+        ''' Try to open result in web browser or if not just pretty dump the dom '''
+        try:
+            webbrowser.open_new_tab('index.html')
+        except:
+            print ("No web browser available.")
+    else:
+        print ("One or both of the image URL and the main URL were not found!")
 
 

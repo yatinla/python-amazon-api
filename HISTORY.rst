@@ -3,6 +3,14 @@
 History
 -------
 
+0.5.1 (2013-02-22)
++++++++++++++++++++
+
+- Add several functions like get_title and get_page_count.  But there
+  are a few cases where I need to add the capability to get an actual
+  XML attribute (not AWS Attribute) from a tag such as the Creator
+  attribute has a Role attribute.
+
 0.5.0 (2013-02-22)
 +++++++++++++++++++
 
