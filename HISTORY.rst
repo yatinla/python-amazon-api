@@ -2,6 +2,13 @@
 
 History
 -------
+0.5.2 (2013-02-23)
++++++++++++++++++++
+
+- Minor fix to the main in aws_search.py so that it opens
+  the aws.xml file in unicode mode because it was sometimes
+  crashing otherwise when trying to write out xml with writexml
+  that had unicode chars.
 
 0.5.1 (2013-02-22)
 +++++++++++++++++++
