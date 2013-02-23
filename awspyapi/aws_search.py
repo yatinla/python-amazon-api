@@ -6,6 +6,8 @@ import urllib
 from urllib2 import urlopen
 import xml.dom.minidom
 from xml.dom.minidom import parse, parseString
+import codecs
+
 try:
     import webbrowser
 except:
@@ -394,7 +396,7 @@ class AwsSearch(object):
         search_params = {}
         search_params['IdType'] = 'ASIN'
         search_params['ItemId'] = self.asin
-        search_params['ResponseGroup'] ='Images,ItemAttributes'
+        search_params['ResponseGroup'] ='Images,ItemAttributes,EditorialReview'
         ''' And of course need the operation '''
         search_params['Operation'] = 'ItemLookup'
 
@@ -801,7 +803,7 @@ if __name__ == '__main__':
         html += '<body><h1>Here is the search result</h1>'
         html += '<a href="'+main_url+'"><img src="'+med_img_url+'"></a></body></html>'
 
-        f = open('aws.xml', 'w')
+        f = codecs.open('aws.xml', encoding='utf-8', mode='w+')
         #dom.writexml( f, addindent="  ", newl = "\n" )
         item.writexml( f, addindent="  ", newl = "\n" )
         f.close()

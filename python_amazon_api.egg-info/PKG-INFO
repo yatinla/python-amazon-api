@@ -1,11 +1,11 @@
 Metadata-Version: 1.1
 Name: python-amazon-api
-Version: 0.5.0
+Version: 0.5.1
 Summary: A Python module for accessing Amazon's Product Advertising API
 Home-page: git://github.com/yatinla/python-amazon-api.git
 Author: Mike Taylor
 Author-email: mike@taylorwebhome.org
-License: <built-in method read of file object at 0x7f04cb2fe390>
+License: <built-in method read of file object at 0x7f65af812390>
 Download-URL: git://github.com/yatinla/python-amazon-api.git
 Description: python-amazon-api: python module for Amazon's Product Advertising API
         =====================================================================
@@ -24,6 +24,14 @@ Description: python-amazon-api: python module for Amazon's Product Advertising A
         
         History
         -------
+        
+        0.5.1 (2013-02-22)
+        +++++++++++++++++++
+        
+        - Add several functions like get_title and get_page_count.  But there
+          are a few cases where I need to add the capability to get an actual
+          XML attribute (not AWS Attribute) from a tag such as the Creator
+          attribute has a Role attribute.
         
         0.5.0 (2013-02-22)
         +++++++++++++++++++
