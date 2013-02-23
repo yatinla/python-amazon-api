@@ -180,6 +180,25 @@ class AwsSearch(object):
                     values.append(v.firstChild.data)
         return values
 
+    def get_product_description(self, item):
+        ''' Get the ProductDescription Content for the given item '''
+        reviews = item.getElementsByTagName('EditorialReview')
+        for r in reviews:
+            sources = r.getElementsByTagName('Source')
+            for source in sources:
+                ''' Look for one where Content is ProductDescription '''
+                s = source.firstChild.data
+                try:
+                    if s == 'Product Description':
+                        content = r.getElementsByTagName('Content')
+                        for c in content:
+                            item.description = c.firstChild.data
+                            return item.description
+                except:
+                    pass
+        item.description = ''
+        return item.description
+
     def get_authors(self, item = None):
         ''' Get Authors 
 
@@ -799,16 +818,26 @@ if __name__ == '__main__':
 
     if main_url != None and med_img_url != None:
         ''' Make a simple web page, save it, and open it '''
-        html = '<!DOCTYPE HTML><head><title>Click me!</title></head><html>'
+        html = '<!DOCTYPE HTML>'
+        html +='<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />'
+        html += '<title>Click me!</title></head>'
         html += '<body><h1>Here is the search result</h1>'
-        html += '<a href="'+main_url+'"><img src="'+med_img_url+'"></a></body></html>'
+        html += '<a href="'+main_url+'"><img src="'+med_img_url+'"></a>'
+        try:
+            s.get_product_description(item)
+            html += '<h2>Description</h2>'
+            html += '<p>' + item.description + '</p>' 
+        except Exception as e:
+            print "Exception getting product description: ", str(e)
+        finally:
+            html += '</body></html>'
 
         f = codecs.open('aws.xml', encoding='utf-8', mode='w+')
         #dom.writexml( f, addindent="  ", newl = "\n" )
         item.writexml( f, addindent="  ", newl = "\n" )
         f.close()
         print("Search results saved to aws.xml")
-        f = open('index.html', 'w')
+        f = codecs.open('index.html', encoding='utf-8', mode='w')
         f.write(html)
         f.close()
         print("A small web page with image and link to item saved to index.html")

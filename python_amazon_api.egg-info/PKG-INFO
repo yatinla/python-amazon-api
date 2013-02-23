@@ -1,11 +1,11 @@
 Metadata-Version: 1.1
 Name: python-amazon-api
-Version: 0.5.1
+Version: 0.5.2
 Summary: A Python module for accessing Amazon's Product Advertising API
 Home-page: git://github.com/yatinla/python-amazon-api.git
 Author: Mike Taylor
 Author-email: mike@taylorwebhome.org
-License: <built-in method read of file object at 0x7f65af812390>
+License: <built-in method read of file object at 0x7f820ef9c390>
 Download-URL: git://github.com/yatinla/python-amazon-api.git
 Description: python-amazon-api: python module for Amazon's Product Advertising API
         =====================================================================
@@ -24,6 +24,13 @@ Description: python-amazon-api: python module for Amazon's Product Advertising A
         
         History
         -------
+        0.5.2 (2013-02-23)
+        +++++++++++++++++++
+        
+        - Minor fix to the main in aws_search.py so that it opens
+          the aws.xml file in unicode mode because it was sometimes
+          crashing otherwise when trying to write out xml with writexml
+          that had unicode chars.
         
         0.5.1 (2013-02-22)
         +++++++++++++++++++

@@ -2,6 +2,18 @@
 
 History
 -------
+
+0.5.3 (2013-02-23)
++++++++++++++++++++
+
+- Add get_product_description method to get the ProductDescription
+  for an item.  Also required adding EditorialReview to the 
+  response groups.  
+
+- Also fixed main so that it propertly sets the html meta type to
+  utf-8 in the <head> of the little HTML demo page it creates
+  since the product description is in utf-8
+
 0.5.2 (2013-02-23)
 +++++++++++++++++++
 
