@@ -3,6 +3,13 @@
 History
 -------
 
+
+0.5.4 (2013-02-24)
++++++++++++++++++++
+
+- Add get_amazon_review which is better, if it exists, than the
+  product description I think.
+
 0.5.3 (2013-02-23)
 +++++++++++++++++++
 

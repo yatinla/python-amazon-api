@@ -199,6 +199,25 @@ class AwsSearch(object):
         item.description = ''
         return item.description
 
+    def get_amazon_review(self, item):
+        ''' Get the ProductDescription Content for the given item '''
+        reviews = item.getElementsByTagName('EditorialReview')
+        for r in reviews:
+            sources = r.getElementsByTagName('Source')
+            for source in sources:
+                ''' Look for one where Content is ProductDescription '''
+                s = source.firstChild.data
+                try:
+                    if s == 'Amazon.com':
+                        content = r.getElementsByTagName('Content')
+                        for c in content:
+                            item.description = c.firstChild.data
+                            return item.description
+                except:
+                    pass
+        item.description = ''
+        return item.description
+
     def get_authors(self, item = None):
         ''' Get Authors 
 
@@ -317,10 +336,6 @@ class AwsSearch(object):
     def get_genres(self, item=None):
         ''' Like Science Fiction etc.  Maybe more than one sometimes? '''
         return self._get_attribute_value( item, 'Genre')
-        if len(values) > 0:
-            return values[0]
-        else:
-            return None
 
     ''' Here are others but I'm not going to worry about them now 
         <Languages>
@@ -824,9 +839,12 @@ if __name__ == '__main__':
         html += '<body><h1>Here is the search result</h1>'
         html += '<a href="'+main_url+'"><img src="'+med_img_url+'"></a>'
         try:
-            s.get_product_description(item)
-            html += '<h2>Description</h2>'
-            html += '<p>' + item.description + '</p>' 
+            s.get_amazon_review(item)
+            if len(item.description) == 0:
+                s.get_product_description(item)
+            if len(item.description) != 0:
+                html += '<h2>Description</h2>'
+                html += '<p>' + item.description + '</p>' 
         except Exception as e:
             print "Exception getting product description: ", str(e)
         finally:
