@@ -1,11 +1,11 @@
 Metadata-Version: 1.1
 Name: python-amazon-api
-Version: 0.5.3
+Version: 0.5.4
 Summary: A Python module for accessing Amazon's Product Advertising API
 Home-page: git://github.com/yatinla/python-amazon-api.git
 Author: Mike Taylor
 Author-email: mike@taylorwebhome.org
-License: <built-in method read of file object at 0x7fb779d6f390>
+License: <built-in method read of file object at 0x7fbd01ebe390>
 Download-URL: git://github.com/yatinla/python-amazon-api.git
 Description: python-amazon-api: python module for Amazon's Product Advertising API
         =====================================================================
@@ -24,6 +24,13 @@ Description: python-amazon-api: python module for Amazon's Product Advertising A
         
         History
         -------
+        
+        
+        0.5.4 (2013-02-24)
+        +++++++++++++++++++
+        
+        - Add get_amazon_review which is better, if it exists, than the
+          product description I think.
         
         0.5.3 (2013-02-23)
         +++++++++++++++++++
