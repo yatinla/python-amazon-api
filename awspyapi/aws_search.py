@@ -421,7 +421,7 @@ class AwsSearch(object):
             return self.asin
         return ''
          
-    def do_item_lookup(self):
+    def do_item_lookup(self, group='Images,ItemAttributes,EditorialReview'):
         ''' Perform an ItemLookup operation.  Will raise an exception if asin is None or empty '''
         if self.asin == None or len(self.asin) == 0:
             raise(AwsSearchException("ASIN must be provided for do_item_lookup"))
@@ -430,7 +430,7 @@ class AwsSearch(object):
         search_params = {}
         search_params['IdType'] = 'ASIN'
         search_params['ItemId'] = self.asin
-        search_params['ResponseGroup'] ='Images,ItemAttributes,EditorialReview'
+        search_params['ResponseGroup'] = group
         ''' And of course need the operation '''
         search_params['Operation'] = 'ItemLookup'
 
@@ -455,6 +455,7 @@ class AwsSearch(object):
                     return i
         else:
             return None
+
 
     def do_search(self):
         '''
@@ -700,7 +701,8 @@ if __name__ == '__main__':
     if len(sys.argv) == 2:
         print "Assume that you only provided an ASIN"
         s = AwsSearch(asin=sys.argv[1])
-        item = s.do_item_lookup() 
+        item = s.do_item_lookup('Small,Images') 
+        #item = s.do_item_lookup() 
         if item == None:
             print "ItemLookup failed!"
             sys.exit(-1)
@@ -831,13 +833,19 @@ if __name__ == '__main__':
         else:
             print "Product group is not recognized: " + product_group
 
-    if main_url != None and med_img_url != None:
+    f = codecs.open('aws.xml', encoding='utf-8', mode='w+')
+    #dom.writexml( f, addindent="  ", newl = "\n" )
+    item.writexml( f, addindent="  ", newl = "\n" )
+    f.close()
+
+    if main_url != None:
         ''' Make a simple web page, save it, and open it '''
         html = '<!DOCTYPE HTML>'
         html +='<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />'
         html += '<title>Click me!</title></head>'
         html += '<body><h1>Here is the search result</h1>'
-        html += '<a href="'+main_url+'"><img src="'+med_img_url+'"></a>'
+	if med_img_url != None:
+  	    html += '<a href="'+main_url+'"><img src="'+med_img_url+'"></a>'
         try:
             s.get_amazon_review(item)
             if len(item.description) == 0:
@@ -850,10 +858,6 @@ if __name__ == '__main__':
         finally:
             html += '</body></html>'
 
-        f = codecs.open('aws.xml', encoding='utf-8', mode='w+')
-        #dom.writexml( f, addindent="  ", newl = "\n" )
-        item.writexml( f, addindent="  ", newl = "\n" )
-        f.close()
         print("Search results saved to aws.xml")
         f = codecs.open('index.html', encoding='utf-8', mode='w')
         f.write(html)

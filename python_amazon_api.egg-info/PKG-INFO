@@ -5,7 +5,7 @@ Summary: A Python module for accessing Amazon's Product Advertising API
 Home-page: git://github.com/yatinla/python-amazon-api.git
 Author: Mike Taylor
 Author-email: mike@taylorwebhome.org
-License: <built-in method read of file object at 0x7fbd01ebe390>
+License: <built-in method read of file object at 0x7f91a80001e0>
 Download-URL: git://github.com/yatinla/python-amazon-api.git
 Description: python-amazon-api: python module for Amazon's Product Advertising API
         =====================================================================

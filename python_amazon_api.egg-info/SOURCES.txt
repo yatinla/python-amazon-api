@@ -1,6 +1,7 @@
 HISTORY.rst
 LICENSE
 README.rst
+README.txt
 setup.py
 awspyapi/__init__.py
 awspyapi/aws_search.py

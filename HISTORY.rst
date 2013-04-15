@@ -3,6 +3,14 @@
 History
 -------
 
+0.5.5 (2013-04-15)
++++++++++++++++++++
+
+- Change do_item_lookup so that it can take an optional group
+  string of Response Groups so that one can tailor it to
+  get the desired information.  The default is the same
+  as the previous set of groups which is
+	'Images,ItemAttributes,EditorialReview'):
 
 0.5.4 (2013-02-24)
 +++++++++++++++++++
