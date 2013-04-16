@@ -3,6 +3,16 @@
 History
 -------
 
+0.5.6 (2013-03-17)
++++++++++++++++++++
+
+- Removed some debugging prints
+
+0.5.5 (2013-03-17)
++++++++++++++++++++
+
+- Don't try to validate search indices and parameters.  Too restrictive and
+  just aggravating.
 
 0.5.4 (2013-02-24)
 +++++++++++++++++++

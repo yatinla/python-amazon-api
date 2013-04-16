@@ -137,21 +137,7 @@ class AwsSearch(object):
             if search_index == None or len(search_params) == 0:
                 raise(AwsSearchException("You must provide an ASIN or else a search index and at least one parameter"))
         
-        ''' Validate the search_index is in the set of valid ones '''            
-
-        if search_index != None:
-            if not search_index in AwsSearch.valid_search_indices:
-                raise AwsSearchException("Invalid search index.  See valid_search_indices set")
-            self.search_index = search_index
-
-        if len(search_params) != 0: 
-            ''' Likewise for all parameters '''
-            for k,v in search_params.iteritems():
-                if not k in AwsSearch.valid_search_params:
-                    raise AwsSearchException("Paramter %s is not a valid parameter" % k )
-            self.search_params = dict.copy(search_params)
-
-        ''' When a search is actuall performed this will be set to the resultant dom '''
+        ''' When a search is actually performed this will be set to the resultant dom '''
         self.search_result_dom = None
 
 
@@ -317,12 +303,19 @@ class AwsSearch(object):
             return None
 
     def get_release_date(self, item=None):
-        ''' Release date of movie '''
-        values = self._get_attribute_value( item, 'ReleaseDate')
-        if len(values) > 0:
-            return values[0]
+        ''' Release date of movie.   First try TheatricalReleaseDate and
+            if not found then just ReleaseDate
+        '''
+        values = self._get_attribute_value( item, 'TheatricalReleaseDate')
+        if not values or len(values) == 0:
+            values = self._get_attribute_value( item, 'ReleaseDate')
+            if len(values) > 0:
+                return values[0]
+            else:
+                return None
         else:
-            return None
+            if len(values) > 0:
+                return values[0]
 
     ''' These could be book or movie '''
     def get_binding(self, item=None):
@@ -828,6 +821,11 @@ if __name__ == '__main__':
             rating = s.get_mpaa_rating(item)
             if rating != None:
                 print "The MPAA has rated this movie " + rating
+            actors = s.get_actors(item)
+            if actors != None:
+                print "Actors:"
+                for a in actors:
+                    print '\t' + a
         else:
             print "Product group is not recognized: " + product_group
 
