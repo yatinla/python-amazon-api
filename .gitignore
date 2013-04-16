@@ -10,4 +10,7 @@ local_settings.py
 dist
 build
 *.html*
+./awspyapi/*.html
+*.egg-info
+
 
