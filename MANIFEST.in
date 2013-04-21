@@ -1,0 +1,6 @@
+include *.rst
+include *.txt
+include *.md
+include *.py
+include LICENSE
+recursive-include awspyapi *.py

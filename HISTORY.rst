@@ -3,6 +3,19 @@
 History
 -------
 
+0.5.9 (2013-04-21)
++++++++++++++++++++
+
+- Add MANIFEST.in and hopefully now pip works reliably when 
+  used to install. Presviousy LICENSE, README.rst etc.
+  were not directly in the tar.gz and pip failed due to it.
+
+0.5.8 (2013-04-21)
++++++++++++++++++++
+
+- Add get_item_asins to get all ASINs from the results 
+  of the search
+
 0.5.7 (2013-03-17)
 +++++++++++++++++++
 

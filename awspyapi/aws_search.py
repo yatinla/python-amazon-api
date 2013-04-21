@@ -87,7 +87,7 @@ class AwsSearch(object):
             'Brand','Conductor','Orchestra','TextStream','Cuisine','City','Neighborhood'])
 
     def __init__(self, tag=None, key=None, secret=None, asin=None, search_index = None, 
-                    search_params = {}):
+                    search_params = {},verbose=False):
         '''
             Constructor for search including search_index and a model set of search parameters
             that is only intended to serve as an example but should return a valid result.
@@ -102,6 +102,7 @@ class AwsSearch(object):
             AWS_SECRET environment variable which throws an exception if it fails
 
         '''                         
+        self.verbose = verbose
         if (tag == None):
             ''' Attempt to get tag from environment variable AWS_TAG '''
             try:
@@ -136,7 +137,10 @@ class AwsSearch(object):
             ''' Must provide search index and at least one parameter if asin isn't none '''
             if search_index == None or len(search_params) == 0:
                 raise(AwsSearchException("You must provide an ASIN or else a search index and at least one parameter"))
-        
+            else:
+                self.search_index = search_index    
+                self.search_params = search_params
+
         ''' When a search is actually performed this will be set to the resultant dom '''
         self.search_result_dom = None
 
@@ -413,7 +417,22 @@ class AwsSearch(object):
             self.asin = a.firstChild.nodeValue
             return self.asin
         return ''
-         
+
+    def get_all_item_asins(self):
+        '''
+            After doing a search (or a lookup but it would be redundant) get the
+            ASIN for an item
+        '''
+
+        if self.search_result_dom == None:
+            raise AwsSearchException("No search results available.  Did you search yet?")
+
+        item_asins = self.search_result_dom.getElementsByTagName("ASIN")
+        asins = list()
+        for a in item_asins:
+            asins.append(a.firstChild.nodeValue)
+        return asins
+
     def do_item_lookup(self, group='Images,ItemAttributes,EditorialReview'):
         ''' Perform an ItemLookup operation.  Will raise an exception if asin is None or empty '''
         if self.asin == None or len(self.asin) == 0:
@@ -476,6 +495,9 @@ class AwsSearch(object):
 
         ''' Sign the URL '''
         url_signed = aws_url.signed_url()
+
+        if self.verbose:
+            print 'AWS URL: ', url_signed
 
         f = urlopen( url_signed )
         self.search_result_dom = parse(f)
@@ -721,10 +743,18 @@ if __name__ == '__main__':
                 pass
 
         print "srch_params before: ", srch_params
-        s = AwsSearch( search_index = sys.argv[1], search_params=srch_params )
+        s = AwsSearch( search_index = sys.argv[1], search_params=srch_params,verbose=True )
         print "srch_params after AwsSearch: ", srch_params
 
         dom = s.do_search()
+
+        print dom
+
+        asins = s.get_all_item_asins()
+        if len(asins) == 0:
+            print 'Fail: no asins'
+        else:
+            print 'Item ASINSs:', asins
 
         print "srch_params after do_search: ", srch_params
 
