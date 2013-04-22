@@ -655,6 +655,7 @@ class AwsSearch(object):
             raise AwsSearchException("No search results available.  Did you search yet?")
 
         items = self.search_result_dom.getElementsByTagName('Item')
+        print '>>>>>>>>>>>>>>. items = ', items
 
         matches = []
 
@@ -713,6 +714,16 @@ if __name__ == '__main__':
     '''
     Something to test with. You MUST have the AWS environment variables set
     '''
+    print 'sys.argv[1]', sys.argv[1]
+    print 'sys.argv[2]', sys.argv[2]
+
+    s = AwsSearch( search_index = sys.argv[1], search_params={'Title':sys.argv[2]},verbose=True )
+    s.do_search()
+    items = s.get_items_by_attributes()
+    print 'items = ', items
+    raise SystemExit
+
+
     if len(sys.argv) == 2:
         print "Assume that you only provided an ASIN"
         s = AwsSearch(asin=sys.argv[1])
